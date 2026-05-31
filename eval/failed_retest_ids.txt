@@ -1,0 +1,18 @@
+# 17 câu fail sau rescored 83/100 — retest khi API key OK
+L1-11
+L2-01
+L2-03
+L2-04
+L2-08
+L3-09
+L4-01
+L4-03
+L4-08
+L5-02
+L5-03
+L6-01
+L6-04
+L2-17
+L4-11
+L4-12
+L4-14

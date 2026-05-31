@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng nhập quản trị — KMA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/admin/admin.css">
+</head>
+<body>
+  <div class="admin-top">Học viện Kỹ thuật Mật mã — Cổng quản trị hệ thống</div>
+  <header class="admin-brand-bar">
+    <div class="inner">
+      <img src="/static/logo.png" alt="KMA" width="56" height="56">
+      <div>
+        <h1>Quản trị</h1>
+        <p>Đăng nhập dành cho cán bộ được phân quyền</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="admin-page">
+    <div class="admin-card">
+      <div class="admin-card-head">
+        <div class="admin-icon"><i class="fas fa-shield-halved"></i></div>
+        <h2>Đăng nhập</h2>
+        <p class="sub">Vui lòng xác thực OTP qua email sau khi đăng nhập</p>
+      </div>
+
+      <div id="error-box" class="admin-alert error" style="display:none"></div>
+
+      <form id="login-form">
+        <div class="admin-field">
+          <label for="username">Tên đăng nhập</label>
+          <div class="admin-input-wrap">
+            <i class="fas fa-user"></i>
+            <input type="text" id="username" name="username" autocomplete="username" required placeholder="Nhập tên đăng nhập">
+          </div>
+        </div>
+        <div class="admin-field">
+          <label for="password">Mật khẩu</label>
+          <div class="admin-input-wrap">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="password" name="password" autocomplete="current-password" required placeholder="Nhập mật khẩu">
+          </div>
+        </div>
+        <button type="submit" class="admin-btn admin-btn-primary" id="submit-btn">Đăng nhập</button>
+      </form>
+
+      <div id="sso-block" class="admin-sso-block" hidden>
+        <p class="admin-sso-divider"><span>hoặc</span></p>
+        <a id="google-login-btn" class="admin-btn admin-btn-google" href="/auth/google/login">
+          <i class="fab fa-google"></i> Đăng nhập Google Workspace
+        </a>
+        <form id="ldap-form" class="admin-ldap-form" hidden>
+          <p class="sub" style="text-align:left;margin-bottom:10px">LDAP / Active Directory</p>
+          <div class="admin-field">
+            <label for="ldap-user">Tên đăng nhập</label>
+            <input type="text" id="ldap-user" required>
+          </div>
+          <div class="admin-field">
+            <label for="ldap-pass">Mật khẩu</label>
+            <input type="password" id="ldap-pass" required>
+          </div>
+          <button type="submit" class="admin-btn admin-btn-primary">Đăng nhập LDAP</button>
+        </form>
+      </div>
+
+      <a class="admin-back-portal" href="/"><i class="fas fa-arrow-left"></i> Về cổng sinh viên</a>
+    </div>
+  </main>
+
+  <script src="/static/admin/admin-auth.js"></script>
+  <script>
+    const form = document.getElementById('login-form');
+    const errorBox = document.getElementById('error-box');
+    const submitBtn = document.getElementById('submit-btn');
+
+    if (AdminAuth.isAuthenticated()) {
+      window.location.href = '/admin/dashboard';
+    }
+
+    const errParam = new URLSearchParams(window.location.search).get('error');
+    if (errParam) {
+      errorBox.textContent = 'Đăng nhập SSO thất bại: ' + errParam;
+      errorBox.style.display = 'block';
+    }
+
+    (async () => {
+      try {
+        const cfg = await fetch('/auth/sso/config').then(r => r.json());
+        if (cfg.google || cfg.ldap) {
+          document.getElementById('sso-block').hidden = false;
+          document.getElementById('ldap-form').hidden = !cfg.ldap;
+        }
+      } catch (_) {}
+    })();
+
+    document.getElementById('ldap-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorBox.style.display = 'none';
+      const fd = new URLSearchParams({
+        username: document.getElementById('ldap-user').value.trim(),
+        password: document.getElementById('ldap-pass').value,
+      });
+      try {
+        const res = await fetch('/auth/ldap/login', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: fd });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.detail || 'LDAP thất bại');
+        if (data.requires_otp) {
+          sessionStorage.setItem('otp_username', document.getElementById('ldap-user').value.trim());
+          sessionStorage.setItem('otp_emailHint', data.email_hint || '');
+          sessionStorage.setItem('otp_message', data.message || '');
+          window.location.href = '/admin/verify-otp';
+        }
+      } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.style.display = 'block';
+      }
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorBox.style.display = 'none';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Đang xử lý...';
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const body = new URLSearchParams({ username, password });
+        const res = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body,
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data.detail || 'Tên đăng nhập hoặc mật khẩu không đúng');
+        }
+
+        if (data.requires_otp) {
+          sessionStorage.setItem('otp_username', username);
+          sessionStorage.setItem('otp_emailHint', data.email_hint || '');
+          sessionStorage.setItem('otp_message', data.message || '');
+          window.location.href = '/admin/verify-otp';
+          return;
+        }
+
+        AdminAuth.login(data.access_token, data.refresh_token, { username, role: data.role });
+        window.location.href = '/admin/dashboard';
+      } catch (err) {
+        errorBox.textContent = err.message || 'Đăng nhập thất bại';
+        errorBox.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Đăng nhập';
+      }
+    });
+  </script>
+</body>
+</html>

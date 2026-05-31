@@ -1,0 +1,871 @@
+CASE PASS - CAU HOI & CAU TRA LOI (co mo ta tung tier)
+Tong: 44 case pass, 49 khoi hoi-dap
+Copy CAU HOI vao http://127.0.0.1:8000 , doi chieu CAU TRA LOI
+============================================================
+
+BANG TOM TAT CAC TIER (benchmark 80 case)
+------------------------------------------------------------
+L0 — Guardrail & chitchat
+  Không tra cứu PDF. Luồng: Guardrail → trả lời cố định (chào hỏi / từ chối off-topic / giới thiệu KMA). Không qua Supervisor, Planner, RAG.
+
+L1 — Đơn giản — một agent, RAG Native
+  Luồng: Guardrail → Rewriter → Supervisor (1 agent) → Specialist: Qc thấp (<0.40) → Router chọn native_rag (1 lần tìm Qdrant + 1 lần GPT). Filter corpus theo agent_id.
+
+L2 — Trung bình — một agent, Hybrid hoặc Agentic
+  Luồng: giống L1 nhưng Qc trung bình–cao (≥0.40). Router: hybrid_rag (Native trước, nếu «không tìm thấy» → Agentic) hoặc agentic_rag (nhiều vòng Plan–Retrieve–Eval, tối đa 4 vòng). Câu so sánh, liệt kê, nhiều fact.
+
+L3 — Multi-agent — Supervisor + Aggregator
+  Luồng: Guardrail → Rewriter → Supervisor chọn 2–3 agent (chạy song song) → mỗi agent RAG riêng (Native/Hybrid/Agentic) → Aggregator gộp 1 câu trả lời (pipeline tổng: multi_agent). Thường không bật Planner.
+
+L4 — Phức tạp — Planner + multi-agent
+  Luồng: câu dài → Planner tách tối đa 3 sub-questions → Supervisor gán agent cho từng ý → chạy specialist song song → Aggregator gộp. Kết hợp: Planner + Supervisor + (Native/Hybrid/Agentic từng agent) + Aggregator.
+
+L5 — Multi-turn — memory & Query Rewriter
+  Luồng: cùng session_id + history qua nhiều lượt. Lượt sau: Rewriter hiểu «còn», «đơn đó» → retrieval_query đủ nghĩa. Có thể 1 agent (L1/L2) hoặc multi-agent tùy câu. Cần không reset phiên giữa các lượt.
+
+L6 — Biểu mẫu — catalog & form fill
+  Luồng: agent bieu_mau — catalog.json (tìm tên/link đơn) + Qdrant; hoặc nhánh form_fill (điền Word, hỏi từng field). Pipeline có thể: native_rag, hybrid_rag, multi_agent, form_fill.
+
+============================================================
+
+############################################################
+L0 — Guardrail & chitchat
+Không tra cứu PDF. Luồng: Guardrail → trả lời cố định (chào hỏi / từ chối off-topic / giới thiệu KMA). Không qua Supervisor, Planner, RAG.
+############################################################
+
+============================================================
+[L0-01]
+------------------------------------------------------------
+CAU HOI:
+Xin chào!
+
+CAU TRA LOI:
+Xin chào! Em là trợ lý ảo **đa tác tử** của Học viện Kỹ thuật Mật mã (KMA).
+
+Em hỗ trợ tra cứu **tài liệu chính thức** về: tuyển sinh & CTĐT, khảo thí & quy chế, ma trận đề thi, kết quả thi công bố, biểu mẫu & thủ tục.
+
+Bạn muốn hỏi về mảng nào?
+
+============================================================
+[L0-02]
+------------------------------------------------------------
+CAU HOI:
+Cảm ơn bạn nhé!
+
+CAU TRA LOI:
+Xin chào! Em là trợ lý ảo **đa tác tử** của Học viện Kỹ thuật Mật mã (KMA).
+
+Em hỗ trợ tra cứu **tài liệu chính thức** về: tuyển sinh & CTĐT, khảo thí & quy chế, ma trận đề thi, kết quả thi công bố, biểu mẫu & thủ tục.
+
+Bạn muốn hỏi về mảng nào?
+
+============================================================
+[L0-03]
+------------------------------------------------------------
+CAU HOI:
+Thời tiết Hà Nội ngày mai thế nào?
+
+CAU TRA LOI:
+Em là trợ lý ảo **Học viện Kỹ thuật Mật mã (KMA)**. Câu hỏi của bạn **nằm ngoài phạm vi** tài liệu và chức năng em hỗ trợ, nên em không tra cứu hay suy đoán thêm.
+
+Em có thể giúp các mảng sau (dựa trên tài liệu KMA):
+
+• **Trợ lý Tuyển sinh & CTĐT**: Tuyển sinh đại học/thạc sĩ, đề án tuyển sinh, điểm chuẩn, ngành học, chương trình đào tạo các ngành, thông tin nhập học.
+• **Trợ lý Khảo thí & Quy chế**: Quy chế đào tạo, chuẩn đầu ra ngoại ngữ, quy định thi, thi tốt nghiệp, sát hạch, quy trình khảo thí.
+• **Trợ lý Ma trận đề thi**: Ma trận đề thi, cấu trúc đề, môn học cụ thể (tin học, CSDL, toán, an toàn thông tin, kiểm thử, quản trị an toàn).
+• **Trợ lý Kết quả học tập & Thi**: Kết quả thi, điểm học kỳ, bảng điểm công bố theo MSSV (trong file PDF điểm), tốt nghiệp CT4, thi Anh văn, danh sách chứng chỉ.
+• **Trợ lý Biểu mẫu & Thủ tục**: Đơn từ, biểu mẫu, thủ tục hành chính sinh viên: nghỉ học, phúc khảo, cấp thẻ, BHYT, thực tập, ra trường, tài khoản MBank.
+
+Bạn hãy đặt câu hỏi liên quan một trong các mảng trên (ví dụ: chuẩn đầu ra ngoại ngữ, đơn xin nghỉ học, ma trận đề thi, tuyển sinh 2025).
+
+============================================================
+[L0-04]
+------------------------------------------------------------
+CAU HOI:
+Viết code Python sort list như thế nào?
+
+CAU TRA LOI:
+Em là trợ lý ảo **Học viện Kỹ thuật Mật mã (KMA)**. Câu hỏi của bạn **nằm ngoài phạm vi** tài liệu và chức năng em hỗ trợ, nên em không tra cứu hay suy đoán thêm.
+
+Em có thể giúp các mảng sau (dựa trên tài liệu KMA):
+
+• **Trợ lý Tuyển sinh & CTĐT**: Tuyển sinh đại học/thạc sĩ, đề án tuyển sinh, điểm chuẩn, ngành học, chương trình đào tạo các ngành, thông tin nhập học.
+• **Trợ lý Khảo thí & Quy chế**: Quy chế đào tạo, chuẩn đầu ra ngoại ngữ, quy định thi, thi tốt nghiệp, sát hạch, quy trình khảo thí.
+• **Trợ lý Ma trận đề thi**: Ma trận đề thi, cấu trúc đề, môn học cụ thể (tin học, CSDL, toán, an toàn thông tin, kiểm thử, quản trị an toàn).
+• **Trợ lý Kết quả học tập & Thi**: Kết quả thi, điểm học kỳ, bảng điểm công bố theo MSSV (trong file PDF điểm), tốt nghiệp CT4, thi Anh văn, danh sách chứng chỉ.
+• **Trợ lý Biểu mẫu & Thủ tục**: Đơn từ, biểu mẫu, thủ tục hành chính sinh viên: nghỉ học, phúc khảo, cấp thẻ, BHYT, thực tập, ra trường, tài khoản MBank.
+
+Bạn hãy đặt câu hỏi liên quan một trong các mảng trên (ví dụ: chuẩn đầu ra ngoại ngữ, đơn xin nghỉ học, ma trận đề thi, tuyển sinh 2025).
+
+============================================================
+[L0-06]
+------------------------------------------------------------
+CAU HOI:
+GPT-4 là gì và do ai phát triển?
+
+CAU TRA LOI:
+Em là trợ lý ảo **Học viện Kỹ thuật Mật mã (KMA)**. Câu hỏi của bạn **nằm ngoài phạm vi** tài liệu và chức năng em hỗ trợ, nên em không tra cứu hay suy đoán thêm.
+
+Em có thể giúp các mảng sau (dựa trên tài liệu KMA):
+
+• **Trợ lý Tuyển sinh & CTĐT**: Tuyển sinh đại học/thạc sĩ, đề án tuyển sinh, điểm chuẩn, ngành học, chương trình đào tạo các ngành, thông tin nhập học.
+• **Trợ lý Khảo thí & Quy chế**: Quy chế đào tạo, chuẩn đầu ra ngoại ngữ, quy định thi, thi tốt nghiệp, sát hạch, quy trình khảo thí.
+• **Trợ lý Ma trận đề thi**: Ma trận đề thi, cấu trúc đề, môn học cụ thể (tin học, CSDL, toán, an toàn thông tin, kiểm thử, quản trị an toàn).
+• **Trợ lý Kết quả học tập & Thi**: Kết quả thi, điểm học kỳ, bảng điểm công bố theo MSSV (trong file PDF điểm), tốt nghiệp CT4, thi Anh văn, danh sách chứng chỉ.
+• **Trợ lý Biểu mẫu & Thủ tục**: Đơn từ, biểu mẫu, thủ tục hành chính sinh viên: nghỉ học, phúc khảo, cấp thẻ, BHYT, thực tập, ra trường, tài khoản MBank.
+
+Bạn hãy đặt câu hỏi liên quan một trong các mảng trên (ví dụ: chuẩn đầu ra ngoại ngữ, đơn xin nghỉ học, ma trận đề thi, tuyển sinh 2025).
+
+============================================================
+[L0-07]
+------------------------------------------------------------
+CAU HOI:
+Xem bóng đá hôm nay kênh nào?
+
+CAU TRA LOI:
+Em là trợ lý ảo **Học viện Kỹ thuật Mật mã (KMA)**. Câu hỏi của bạn **nằm ngoài phạm vi** tài liệu và chức năng em hỗ trợ, nên em không tra cứu hay suy đoán thêm.
+
+Em có thể giúp các mảng sau (dựa trên tài liệu KMA):
+
+• **Trợ lý Tuyển sinh & CTĐT**: Tuyển sinh đại học/thạc sĩ, đề án tuyển sinh, điểm chuẩn, ngành học, chương trình đào tạo các ngành, thông tin nhập học.
+• **Trợ lý Khảo thí & Quy chế**: Quy chế đào tạo, chuẩn đầu ra ngoại ngữ, quy định thi, thi tốt nghiệp, sát hạch, quy trình khảo thí.
+• **Trợ lý Ma trận đề thi**: Ma trận đề thi, cấu trúc đề, môn học cụ thể (tin học, CSDL, toán, an toàn thông tin, kiểm thử, quản trị an toàn).
+• **Trợ lý Kết quả học tập & Thi**: Kết quả thi, điểm học kỳ, bảng điểm công bố theo MSSV (trong file PDF điểm), tốt nghiệp CT4, thi Anh văn, danh sách chứng chỉ.
+• **Trợ lý Biểu mẫu & Thủ tục**: Đơn từ, biểu mẫu, thủ tục hành chính sinh viên: nghỉ học, phúc khảo, cấp thẻ, BHYT, thực tập, ra trường, tài khoản MBank.
+
+Bạn hãy đặt câu hỏi liên quan một trong các mảng trên (ví dụ: chuẩn đầu ra ngoại ngữ, đơn xin nghỉ học, ma trận đề thi, tuyển sinh 2025).
+
+
+############################################################
+L1 — Đơn giản — một agent, RAG Native
+Luồng: Guardrail → Rewriter → Supervisor (1 agent) → Specialist: Qc thấp (<0.40) → Router chọn native_rag (1 lần tìm Qdrant + 1 lần GPT). Filter corpus theo agent_id.
+############################################################
+
+============================================================
+[L1-01]
+------------------------------------------------------------
+CAU HOI:
+Mã trường của Học viện Kỹ thuật Mật mã trong tuyển sinh 2025 là gì?
+
+CAU TRA LOI:
+Mã trường của Học viện Kỹ thuật Mật mã trong tuyển sinh 2025 là KMA.
+
+============================================================
+[L1-02]
+------------------------------------------------------------
+CAU HOI:
+Trang web tuyển sinh chính thức của KMA là gì?
+
+CAU TRA LOI:
+Trang web tuyển sinh chính thức của Học viện Kỹ thuật Mật mã (KMA) là: [http://tuyensinh.actvn.edu.vn](http://tuyensinh.actvn.edu.vn).
+
+============================================================
+[L1-03]
+------------------------------------------------------------
+CAU HOI:
+Số điện thoại liên hệ tuyển sinh KMA trong đề án 2025?
+
+CAU TRA LOI:
+Số điện thoại liên hệ tuyển sinh của Học viện Kỹ thuật Mật mã (KMA) trong đề án tuyển sinh năm 2025 là: 0986622772.
+
+============================================================
+[L1-05]
+------------------------------------------------------------
+CAU HOI:
+Địa chỉ cơ sở đào tạo chính của KMA tại Hà Nội?
+
+CAU TRA LOI:
+Địa chỉ cơ sở đào tạo chính của Học viện Kỹ thuật mật mã (KMA) tại Hà Nội là: 141 đường Chiến Thăng, Tân Triều, Thanh Trì, Hà Nội.
+
+============================================================
+[L1-06]
+------------------------------------------------------------
+CAU HOI:
+Mã ngành đào tạo Công nghệ thông tin trong chương trình CTĐT chính quy là gì?
+
+CAU TRA LOI:
+Mã ngành đào tạo Công nghệ thông tin trong chương trình CTĐT chính quy là 7.48.01.01.
+
+============================================================
+[L1-07]
+------------------------------------------------------------
+CAU HOI:
+Chuyên ngành của chương trình CNTT chính quy KMA là gì?
+
+CAU TRA LOI:
+Chuyên ngành của chương trình Công nghệ thông tin (CNTT) chính quy tại Học viện Kỹ thuật Mật mã (KMA) là **Kỹ thuật phần mềm nhúng và di động** (Mobile and Embedded Software Engineering - MESE).
+
+============================================================
+[L1-08]
+------------------------------------------------------------
+CAU HOI:
+Khối lượng học tập tối thiểu chương trình đại học cấp bằng cử nhân theo quy chế KMA 2025 là bao nhiêu tín chỉ?
+
+CAU TRA LOI:
+Khối lượng học tập tối thiểu của chương trình đào tạo đại học cấp bằng cử nhân theo quy chế KMA 2025 là 120 tín chỉ (chưa bao gồm khối lượng giáo dục thể chất và giáo dục quốc phòng - an ninh).
+
+============================================================
+[L1-12]
+------------------------------------------------------------
+CAU HOI:
+Môn Tin học đại cương: tổng số câu trắc nghiệm và thời gian làm bài theo ma trận đề thi KMA?
+
+CAU TRA LOI:
+1. Môn Tin học đại cương có tổng số câu trắc nghiệm là 50 câu.
+
+2. Thời gian làm bài theo ma trận đề thi KMA là 60 phút.
+
+============================================================
+[L1-14]
+------------------------------------------------------------
+CAU HOI:
+Môn Toán cao cấp A3 thuộc khoa nào theo ma trận đề thi?
+
+CAU TRA LOI:
+Môn Toán cao cấp A3 thuộc Khoa Cơ bản theo ma trận đề thi.
+
+============================================================
+[L1-16]
+------------------------------------------------------------
+CAU HOI:
+Sinh viên xin nghỉ học tạm thời dưới 7 ngày dùng đơn nào?
+
+CAU TRA LOI:
+Sinh viên xin nghỉ học tạm thời dưới 7 ngày sử dụng đơn "Đơn xin nghỉ học tạm thời (dưới 7 ngày)". 
+
+- Loại: nghỉ học
+- Tải: [Tại đây](https://kma.edu.vn/docs/bieu_mau/08-Don_nghi_hoc_duoi_7_ngay.doc)
+
+
+############################################################
+L2 — Trung bình — một agent, Hybrid hoặc Agentic
+Luồng: giống L1 nhưng Qc trung bình–cao (≥0.40). Router: hybrid_rag (Native trước, nếu «không tìm thấy» → Agentic) hoặc agentic_rag (nhiều vòng Plan–Retrieve–Eval, tối đa 4 vòng). Câu so sánh, liệt kê, nhiều fact.
+############################################################
+
+============================================================
+[L2-02]
+------------------------------------------------------------
+CAU HOI:
+So sánh điểm trúng tuyển năm 2023 và 2024 của ngành An toàn thông tin (cơ sở Hà Nội).
+
+CAU TRA LOI:
+Điểm trúng tuyển của ngành An toàn thông tin (cơ sở Hà Nội) trong năm 2023 là 25.60. Tuy nhiên, hiện tại chưa có thông tin cụ thể về điểm trúng tuyển cho năm 2024 trong tài liệu KMA. Do đó, sinh viên cần theo dõi các thông báo chính thức từ nhà trường để cập nhật thông tin mới nhất về điểm trúng tuyển cho năm 2024.
+
+============================================================
+[L2-03]
+------------------------------------------------------------
+CAU HOI:
+Liệt kê các tổ hợp môn xét tuyển đại học chính quy KMA năm 2025.
+
+CAU TRA LOI:
+Các tổ hợp môn xét tuyển đại học chính quy của Học viện Kỹ thuật Mật mã (KMA) năm 2025 bao gồm:
+
+1. Tổ hợp A00: Toán, Vật lý, Hóa học
+2. Tổ hợp A01: Toán, Vật lý, Tiếng Anh
+3. Tổ hợp: Toán, Tiếng Anh, Tin học
+4. Tổ hợp: Toán, Vật lý, Tin học
+
+Không có chênh lệch điểm xét tuyển giữa các tổ hợp. Các môn trong tổ hợp đều có hệ số 1.
+
+============================================================
+[L2-04]
+------------------------------------------------------------
+CAU HOI:
+Chương trình CNTT chính quy KMA được xây dựng theo hướng tiếp cận nào và mã chương trình là gì?
+
+CAU TRA LOI:
+1. Chương trình đào tạo chính quy ngành Công nghệ Thông tin (CNTT) tại Học viện KMA được xây dựng theo hướng tiếp cận chuẩn đầu ra CDIO (Conceive – Design – Implement – Operate).
+
+2. Mã chương trình đào tạo chính quy ngành Công nghệ Thông tin (CNTT) tại Học viện KMA là KMC.1.1.1.
+
+============================================================
+[L2-05]
+------------------------------------------------------------
+CAU HOI:
+Quy định chuẩn ngoại ngữ KMA không áp dụng cho những đối tượng sinh viên nào?
+
+CAU TRA LOI:
+Dựa trên tài liệu của Học viện Kỹ thuật Mật mã (KMA), dưới đây là các thông tin chi tiết liên quan đến quy định chuẩn ngoại ngữ:
+
+### 1. Quy định chuẩn ngoại ngữ KMA không áp dụng cho những đối tượng sinh viên nào?
+- **Sinh viên thuộc các chương trình đào tạo đặc biệt**: Quy định này không áp dụng cho học viên, sinh viên thuộc các chương trình đào tạo đặc biệt như kỹ sư tài năng, kỹ sư chất lượng cao, chương trình tiên tiến.
+- **Sinh viên là người nước ngoài**: Quy định này cũng không áp dụng cho học viên, sinh viên là người nước ngoài đang học tập tại Học viện Kỹ thuật Mật mã.
+
+### 2. Có những đối tượng sinh viên nào được miễn quy định chuẩn ngoại ngữ KMA?
+- **Sinh viên có chứng chỉ tiếng Anh quốc gia, quốc tế**: Học viên, sinh viên có chứng chỉ tiếng Anh quốc gia, quốc tế còn hiệu lực tại thời điểm xử lý học tập và đạt điểm quy đổi từ TOEIC 500 trở lên sẽ được xét công nhận đạt chuẩn tiếng Anh theo trình độ hoặc chuẩn tiếng Anh đầu ra.
+- **Sinh viên được miễn học các học phần tiếng Anh**: Học viên, sinh viên có chứng chỉ tiếng Anh quốc gia, quốc tế trước thời điểm đăng ký học phần tiếng Anh với số điểm theo quy định và còn thời hạn sẽ được miễn học các học phần tiếng Anh 1, 2, 3. 
+
+Các thông tin trên được trích dẫn từ tài liệu quy định chuẩn năng lực tiếng Anh cho học viên, sinh viên tại Học viện Kỹ thuật Mật mã.
+
+============================================================
+[L2-06]
+------------------------------------------------------------
+CAU HOI:
+Học viện có công nhận chứng chỉ VSTEP không? Điều kiện công nhận là gì?
+
+CAU TRA LOI:
+1. **Học viện có công nhận chứng chỉ VSTEP không?**
+   - Có, Học viện Kỹ thuật Mật mã (KMA) công nhận chứng chỉ tiếng Anh theo khung năng lực ngoại ngữ 6 bậc dành cho người Việt Nam (VSTEP).
+
+2. **Điều kiện công nhận chứng chỉ VSTEP là gì?**
+   - Chứng chỉ VSTEP được Học viện công nhận nếu được cấp bởi một trong những cơ sở đào tạo nằm trong danh mục được Bộ Giáo dục và Đào tạo cấp phép.
+
+============================================================
+[L2-07]
+------------------------------------------------------------
+CAU HOI:
+Theo bảng yêu cầu chuẩn tiếng Anh theo trình độ, sinh viên cần bao nhiêu tín chỉ tích lũy và TOEIC tối thiểu khi kết thúc Tiếng Anh 2?
+
+CAU TRA LOI:
+1. Theo bảng yêu cầu chuẩn tiếng Anh theo trình độ, sinh viên cần tích lũy **3 tín chỉ** khi kết thúc Tiếng Anh 2.
+
+2. Sinh viên cần đạt **350 điểm TOEIC** tối thiểu khi kết thúc Tiếng Anh 2.
+
+============================================================
+[L2-09]
+------------------------------------------------------------
+CAU HOI:
+Ma trận đề thi môn Lý thuyết cơ sở dữ liệu có những phần nội dung chính nào?
+
+CAU TRA LOI:
+1. **Ma trận đề thi môn Lý thuyết cơ sở dữ liệu có những phần nội dung chính nào?**
+   - Ma trận đề thi môn Lý thuyết cơ sở dữ liệu bao gồm các phần nội dung chính sau:
+     - Tổng quan về cơ sở dữ liệu
+     - Mô hình thực thể liên kết (ER)
+     - Mô hình CSDL quan hệ
+     - Lý thuyết thiết kế CSDL quan hệ
+
+2. **Có bao nhiêu phần nội dung chính trong ma trận đề thi môn Lý thuyết cơ sở dữ liệu?**
+   - Có 4 phần nội dung chính trong ma trận đề thi môn Lý thuyết cơ sở dữ liệu.
+
+3. **Các phần nội dung chính trong ma trận đề thi môn Lý thuyết cơ sở dữ liệu là gì?**
+   - Các phần nội dung chính trong ma trận đề thi môn Lý thuyết cơ sở dữ liệu là:
+     1. Tổng quan về cơ sở dữ liệu
+     2. Mô hình thực thể liên kết (ER)
+     3. Mô hình CSDL quan hệ
+     4. Lý thuyết thiết kế CSDL quan hệ
+
+============================================================
+[L2-10]
+------------------------------------------------------------
+CAU HOI:
+Môn Kiểm thử an toàn hệ thống thông tin thuộc ma trận nào trong tài liệu KMA?
+
+CAU TRA LOI:
+Môn Kiểm thử an toàn hệ thống thông tin thuộc ma trận đề thi được nêu trong tài liệu KMA, cụ thể là trong tài liệu có mã đề thi 146. Dưới đây là các thông tin cụ thể liên quan đến môn thi này:
+
+1. **Tên môn thi**: Kiểm thử và đánh giá an toàn hệ thống thông tin.
+2. **Thời gian làm bài**: 60 phút, không kể thời gian phát đề.
+3. **Thông tin thí sinh**:
+   - Họ, tên thí sinh: ...........................................................
+   - Số báo danh: ................................................................
+4. **Mã đề thi**: 146.
+5. **Cấu trúc đề thi**: Đề thi có 14 trang, bao gồm nhiều câu hỏi liên quan đến kiểm thử an toàn hệ thống thông tin.
+
+Nếu cần thêm thông tin chi tiết về các câu hỏi trong đề thi, vui lòng tham khảo các phần cụ thể trong tài liệu.
+
+============================================================
+[L2-11]
+------------------------------------------------------------
+CAU HOI:
+File bảng điểm học kỳ 1 năm học 2024-2025 đợt 2 của KMA tổng hợp những học phần nào (nêu ít nhất 5 tên)?
+
+CAU TRA LOI:
+1. File bảng điểm học kỳ 1 năm học 2024-2025 đợt 2 của KMA tổng hợp những học phần sau:
+   - An toàn mạng không dây và di động
+   - Chuyên đề An toàn hệ thống thông tin
+   - Chuyên đề Công nghệ phần mềm an toàn
+   - Chuyên đề Kỹ nghệ an toàn mạng
+   - Đặc tả hình thức
+   - Khai thác lỗ hổng phần mềm
+   - Phát triển ứng dụng trên nền tảng di động
+   - Phân tích thiết kế an toàn mạng máy tính
+   - Quản trị an toàn hệ thống
+   - Tấn công và phòng thủ hệ thống
+   - Thiết kế giao diện người dùng
+   - An toàn cơ sở dữ liệu
+   - Nhập môn mật mã học
+   - Linux và phần mềm nguồn mở
+   - Lập trình hướng đối tượng
+   - Phương pháp tính
+   - Công nghệ mạng máy tính
+   - Pháp luật Việt Nam đại cương
+   - Tiếng Anh 1
+   - Giải tích 1
+   - Giáo dục thể chất 1
+   - Nhập môn công nghệ thông tin
+   - Triết học Mác - Lênin
+   - An toàn & bảo mật trong phát triển PM di động
+   - Phát triển phần mềm trong thẻ thông minh
+   - Tối ưu phần mềm di động
+   - Phát triển phần mềm ứng dụng
+   - Quản trị dự án phần mềm
+   - Thiết kế hệ thống nhúng
+   - Thực tập cơ sở chuyên ngành
+
+2. Ít nhất 5 tên học phần trong file bảng điểm đó:
+   - An toàn mạng không dây và di động
+   - Chuyên đề An toàn hệ thống thông tin
+   - Chuyên đề Công nghệ phần mềm an toàn
+   - Chuyên đề Kỹ nghệ an toàn mạng
+   - Đặc tả hình thức
+
+============================================================
+[L2-12]
+------------------------------------------------------------
+CAU HOI:
+Tài liệu kết quả tốt nghiệp CT4 năm 2024 của KMA dùng để tra cứu thông tin gì?
+
+CAU TRA LOI:
+Tài liệu kết quả tốt nghiệp CT4 năm 2024 của Học viện Kỹ thuật Mật mã (KMA) dùng để tra cứu các thông tin sau:
+
+1. **Thông tin chung về môn thi**:
+   - Chuyên ngành: Kỹ thuật phần mềm nhúng và di động.
+   - Năm: 2024.
+   - Các môn thi: 
+     - Kiến thức cơ sở trong PTPM (Mã học phần: CTCTTN4, Số tín chỉ: 3).
+     - Chuyên đề tổng hợp về PTPM (Mã học phần: CTCTTN3, Số tín chỉ: 5).
+
+2. **Kết quả điểm thi**:
+   - Danh sách sinh viên với các thông tin cụ thể:
+     - SBD (Số báo danh).
+     - Mã SV (Mã sinh viên).
+     - Họ và tên.
+     - Lớp.
+     - Điểm thi.
+     - Ghi chú (ví dụ: "Không thi").
+
+3. **Ví dụ về kết quả điểm thi**:
+   - Môn Kiến thức cơ sở trong PTPM:
+     - Bùi Nam Anh (Mã SV: CT040102) - Điểm thi: 3.4.
+     - Đỗ Thị Ngọc Anh (Mã SV: CT040104) - Điểm thi: 7.8.
+     - Nguyễn Trung Anh (Mã SV: CT040302) - Điểm thi: 5.7.
+   - Môn Chuyên đề tổng hợp về PTPM:
+     - Lê Tuấn Anh (Mã SV: CT040201) - Điểm thi: 8.
+     - Nguyễn Đức Tuấn Anh (Mã SV: CT040203) - Điểm thi: 6.
+     - Bùi Quốc Việt Anh (Mã SV: CT040103) - Điểm thi: 6.5.
+
+Tài liệu này giúp sinh viên và các bên liên quan tra cứu kết quả thi tốt nghiệp của sinh viên thuộc chương trình CT4 trong năm 2024.
+
+============================================================
+[L2-15]
+------------------------------------------------------------
+CAU HOI:
+Sinh viên cần giấy giới thiệu thực tập — tên biểu mẫu và category trong catalog?
+
+CAU TRA LOI:
+1. Sinh viên cần giấy giới thiệu thực tập.
+2. Tên biểu mẫu cho giấy giới thiệu thực tập là "Giấy giới thiệu thực tập".
+3. Category trong catalog cho giấy giới thiệu thực tập là "thực tập".
+
+
+############################################################
+L3 — Multi-agent — Supervisor + Aggregator
+Luồng: Guardrail → Rewriter → Supervisor chọn 2–3 agent (chạy song song) → mỗi agent RAG riêng (Native/Hybrid/Agentic) → Aggregator gộp 1 câu trả lời (pipeline tổng: multi_agent). Thường không bật Planner.
+############################################################
+
+============================================================
+[L3-02]
+------------------------------------------------------------
+CAU HOI:
+Theo quy chế đào tạo KMA và biểu mẫu hiện hành, sinh viên muốn phúc khảo bài thi cần dùng đơn nào?
+
+CAU TRA LOI:
+Theo quy chế đào tạo KMA, sinh viên muốn phúc khảo bài thi cần sử dụng "Đơn xin phúc khảo bài thi". Biểu mẫu hiện hành cho phúc khảo bài thi có thể tải về từ đường dẫn: /docs/bieu_mau/15-Don_phuc_khao_bai_thi.doc.
+
+============================================================
+[L3-03]
+------------------------------------------------------------
+CAU HOI:
+Chuẩn TOEIC trước đồ án của KMA là bao nhiêu và làm sao biết sinh viên AT200106 đã đạt tiếng Anh đầu vào A20C8D7 2024?
+
+CAU TRA LOI:
+Chuẩn TOEIC trước khi nhận đề tài đồ án/khóa luận tốt nghiệp của KMA là **450 điểm**. 
+
+Để xác định sinh viên AT200106 (Nguyễn Duy Bằng) đã đạt tiếng Anh đầu vào A20C8D7 năm 2024 hay chưa, bạn có thể kiểm tra kết quả thi trong kỳ thi cấp chứng chỉ tiếng Anh nội bộ của Học viện. Theo thông tin, sinh viên này có tên trong danh sách sinh viên đạt yêu cầu khi làm bài thi tiếng Anh đầu vào, nghĩa là sinh viên đã đạt điểm tối thiểu theo quy định: **300 điểm cho Tiếng Anh 1, 350 điểm cho Tiếng Anh 2, và 450 điểm cho Tiếng Anh 3**. 
+
+Nếu sinh viên đã đạt từ 450 điểm trở lên trong kỳ thi, thì sẽ được công nhận đạt chuẩn tiếng Anh đầu ra.
+
+============================================================
+[L3-06]
+------------------------------------------------------------
+CAU HOI:
+Sinh viên nghỉ học trên 7 ngày và cần cấp lại thẻ BHYT: dùng những đơn/mẫu nào trong catalog KMA?
+
+CAU TRA LOI:
+1. **Sinh viên nghỉ học trên 7 ngày cần cấp lại thẻ BHYT?**
+   - Có, sinh viên nghỉ học trên 7 ngày cần thực hiện thủ tục xin nghỉ học tạm thời và có thể cần cấp lại thẻ BHYT nếu thẻ hiện tại không còn hiệu lực hoặc bị mất.
+
+2. **Cần dùng những đơn/mẫu nào trong catalog KMA để cấp lại thẻ BHYT?**
+   - Để xin nghỉ học tạm thời trên 7 ngày, sinh viên cần sử dụng mẫu:
+     - **Đơn xin nghỉ học tạm thời (trên 7 ngày)**: [Tải mẫu](https://kma.edu.vn/docs/bieu_mau/09-Don_nghi_hoc_tren_7_ngay.doc)
+   - Để xin cấp lại thẻ BHYT, sinh viên cần sử dụng mẫu:
+     - **Đơn xin cấp lại thẻ BHYT**: [Tải mẫu](https://kma.edu.vn/docs/bieu_mau/16-Don_cap_lai_the_BHYT.docx)
+
+============================================================
+[L3-07]
+------------------------------------------------------------
+CAU HOI:
+KMA có danh sách trúng tuyển thạc sĩ ATTT 2025 không và đề án tuyển sinh đại học 2025 ghi mã trường là gì?
+
+CAU TRA LOI:
+1. Không tìm thấy thông tin trong tài liệu KMA về danh sách trúng tuyển thạc sĩ An toàn thông tin (ATTT) năm 2025.
+
+2. Đề án tuyển sinh đại học 2025 ghi mã trường là KMA.
+
+============================================================
+[L3-08]
+------------------------------------------------------------
+CAU HOI:
+Điểm trúng tuyển DTVT 2025 và phiếu thanh toán ra trường cá nhân 2026 trong tài liệu KMA?
+
+CAU TRA LOI:
+Hiện tại, không có thông tin nào về điểm trúng tuyển DTVT năm 2025 và phiếu thanh toán ra trường cá nhân năm 2026 trong tài liệu KMA. Các chuyên gia từ các lĩnh vực Tuyển sinh, Kết quả học tập & Thi, và Biểu mẫu & Thủ tục đều xác nhận rằng thông tin này không có sẵn. Nếu bạn cần thêm thông tin, có thể tham khảo các nguồn khác hoặc liên hệ trực tiếp với cơ sở giáo dục để được hỗ trợ.
+
+============================================================
+[L3-10]
+------------------------------------------------------------
+CAU HOI:
+File danh sách nhận chứng chỉ tiếng Anh TA 2024 dùng để tra cứu gì và sinh viên DT070103 có đạt phân loại tiếng Anh đầu vào 2024 không?
+
+CAU TRA LOI:
+File danh sách nhận chứng chỉ tiếng Anh TA 2024 được sử dụng để tra cứu thông tin về các thí sinh đã nhận chứng chỉ tiếng Anh. Trong file này, bạn có thể tìm thấy các thông tin cụ thể như tên thí sinh, ngày tháng năm sinh, số CCCD, số báo danh, kỳ thi THPT, điểm chứng chỉ tiếng Anh (CCTA), CCTA sử dụng cho xét tuyển, ngày cấp chứng chỉ, ngày còn hiệu lực của chứng chỉ, và ngành đăng ký dự kiến. Tài liệu này được cập nhật đến 9h00 ngày 24/7/2024 và giúp sinh viên tra cứu thông tin về chứng chỉ tiếng Anh mà họ đã đạt được, phục vụ cho việc xét tuyển vào Học viện Kỹ thuật Mật mã.
+
+Về sinh viên DT070103, tên là Nguyễn Văn Công Anh, thuộc lớp DT7A, thông tin cho biết rằng sinh viên này đã đạt yêu cầu phân loại tiếng Anh đầu vào 2024 theo tài liệu của Học viện Kỹ thuật Mật mã.
+
+============================================================
+[L3-12]
+------------------------------------------------------------
+CAU HOI:
+Kết quả thi Anh văn công bố 2024 và đơn xin hoãn thi trong bộ biểu mẫu KMA?
+
+CAU TRA LOI:
+Kết quả thi Anh văn công bố năm 2024 và thông tin về đơn xin hoãn thi như sau:
+
+### Kết quả thi Anh văn năm 2024
+- **Ngày công bố:** 02 tháng 7 năm 2024
+- **Danh sách sinh viên có kết quả ĐẠT trong bài thi tiếng Anh đầu vào:**
+
+| TT | Mã SV      | Họ và tên           | Lớp  |
+|----|------------|---------------------|------|
+| 1  | DT070103   | Nguyễn Văn Công Anh  | DT7A |
+| 2  | AT200201   | Nguyễn Văn Hải Anh   | AT20B|
+| 3  | AT200403   | Phạm Thị Minh Ánh   | AT20D|
+| 4  | AT200106   | Nguyễn Duy Bằng     | AT20A|
+| 5  | AT200213   | Nguyễn Hùng Đông     | AT20B|
+| 6  | CT080119   | Lương Hoàng Hiển    | CT8A |
+| 7  | AT200350   | Nguyễn Văn Quang    | AT20C|
+| 8  | AT200361   | Đỗ Huy Trung        | AT20C|
+| 9  | AT200161   | Nguyễn Ngô Trường   | AT20A|
+| 10 | CT080203   | Nguyễn Đức Anh      | CT8B |
+| 11 | AT200206   | Bùi Đình Nguyên Bảo | AT20B|
+| 12 | CT080205   | Thái Quốc Bảo      | CT8B |
+| 13 | CT080113   | Lê Danh Đức        | CT8A |
+| 14 | AT200122   | Lê Thị Hoa         | AT20A|
+| 15 | AT200435   | Nguyễn Hữu Lương   | AT20D|
+| 16 | AT200437   | Phạm Quang Mạnh    | AT20D|
+| 17 | DT070142   | Nguyễn Ngọc Thiện   | DT7A |
+| 18 | CT080253   | Nguyễn Gia Thiều    | CT8B |
+| 19 | CT080158   | Vũ Đăng Trung      | CT8A |
+| 20 | AT200301   | Cao Thị Kiều Anh    | AT20C|
+| 21 | DT070110   | Dương Văn Đạt      | DT7A |
+| 22 | CT080117   | Nguyễn Bá Hải      | CT8A |
+| 23 | AT200320   | Nguyễn Trung Hiếu   | AT20C|
+| 24 | AT200224   | Bùi Khắc Hùng      | AT20B|
+| 25 | CT080128   | Lê Xuân Khải       | CT8A |
+| 26 | AT200241   | Trần Văn Nghĩa     | AT20B|
+| 27 | AT200145   | Nguyễn Tuấn Phong   | AT20A|
+| 28 | AT200347   | Phạm Thu Phương     | AT20C|
+
+### Đơn xin hoãn thi
+Hiện tại, không có thông tin nào về đơn xin hoãn thi trong tài liệu KMA.
+
+Nếu bạn cần thêm thông tin hoặc có câu hỏi khác, vui lòng cho biết!
+
+
+############################################################
+L4 — Phức tạp — Planner + multi-agent
+Luồng: câu dài → Planner tách tối đa 3 sub-questions → Supervisor gán agent cho từng ý → chạy specialist song song → Aggregator gộp. Kết hợp: Planner + Supervisor + (Native/Hybrid/Agentic từng agent) + Aggregator.
+############################################################
+
+============================================================
+[L4-08]
+------------------------------------------------------------
+CAU HOI:
+Sinh viên ngành CNTT KMA: mã ngành, hướng CDIO, đơn đăng ký đồ án lần 2 và giấy giới thiệu thực tập — tên file và mục đích từng biểu mẫu.
+
+CAU TRA LOI:
+Chào bạn,
+
+Dưới đây là thông tin tổng hợp về các vấn đề bạn quan tâm liên quan đến ngành Công nghệ thông tin (CNTT) tại Học viện Kỹ thuật Mật mã (KMA):
+
+1. **Mã ngành**: Mã ngành của ngành CNTT tại KMA là **7.48.01.01**.
+
+2. **Hướng CDIO**: Chương trình học ngành CNTT tại KMA được xây dựng theo hướng tiếp cận chuẩn đầu ra **CDIO (Conceive – Design – Implement – Operate)**, nhằm trang bị cho sinh viên những kỹ năng cần thiết để phát triển và vận hành các hệ thống công nghệ thông tin.
+
+3. **Đơn đăng ký đồ án lần 2 và giấy giới thiệu thực tập**: Hiện tại, thông tin chi tiết về tên file và mục đích của từng biểu mẫu này chưa được cung cấp trong tài liệu của KMA. Bạn có thể liên hệ trực tiếp với bộ phận quản lý sinh viên hoặc giảng viên hướng dẫn để nhận được thông tin cụ thể hơn.
+
+Hy vọng thông tin trên sẽ giúp ích cho bạn trong quá trình học tập và chuẩn bị cho các hoạt động liên quan. Nếu bạn cần thêm thông tin, đừng ngần ngại hỏi thêm nhé!
+
+============================================================
+[L4-10]
+------------------------------------------------------------
+CAU HOI:
+Thủ tục nhập học KMA 2024: các khoản phí bắt buộc (học phí HK1 tạm thu, BHYT, thư viện, thẻ SV, khám SK), tài khoản ngân hàng nhận tiền, hướng dẫn mở tài khoản MBank và mẫu đăng ký TK MBank.
+
+CAU TRA LOI:
+Dưới đây là thông tin chi tiết về thủ tục nhập học KMA 2024, bao gồm các khoản phí bắt buộc, tài khoản ngân hàng nhận tiền, hướng dẫn mở tài khoản MBank và mẫu đăng ký tài khoản MBank:
+
+### I. Các khoản phí bắt buộc
+1. **Học phí học kỳ 1 (tạm thu)**: 
+   - Số tiền: 450.000 VNĐ x 20 tín chỉ = **9.000.000 VNĐ**.
+
+2. **Bảo hiểm y tế (14 tháng)**: 
+   - Thời gian: từ 01/11/2024 đến hết 31/12/2025.
+   - Số tiền: **1.031.940 VNĐ**.
+
+3. **Lệ phí sử dụng thư viện tài liệu học tập**: 
+   - Số tiền: **500.000 VNĐ**.
+
+4. **Thẻ sinh viên**: 
+   - Số tiền: **100.000 VNĐ**.
+
+5. **Khám sức khỏe**: 
+   - Số tiền: **265.000 VNĐ**.
+
+**Tổng số tiền phải nộp**: **10.896.940 VNĐ** (Bằng chữ: Mười triệu tám trăm chín mươi sáu nghìn chín trăm bốn mươi đồng).
+
+**Thời hạn nộp**: Chậm nhất đến hết ngày **05/9/2024**.
+
+### II. Tài khoản ngân hàng nhận tiền
+- **Ngân hàng**: Ngân hàng TMCP Quân đội – chi nhánh Ba Đình - HN.
+- **Số tài khoản**: **0021145666888**.
+- **Cú pháp chuyển khoản**: Mã trúng tuyển _ Họ và tên (Ví dụ: ATMB000001_Hoàng Anh Tuấn).
+
+### III. Hướng dẫn mở tài khoản MBank
+- **Tài liệu hướng dẫn**: Bạn có thể tham khảo [Hướng dẫn mở tài khoản thanh toán MBank](https://kma.edu.vn/docs/bieu_mau/27-HD_mo_TKTT_MBank.pdf).
+- **Loại**: Dành cho tân sinh viên.
+
+### IV. Mẫu đăng ký tài khoản MBank
+- **Tài liệu mẫu**: Bạn có thể tải mẫu từ [Đăng ký tài khoản MBank](https://kma.edu.vn/docs/bieu_mau/26-Dang_ky_TK_MBank.pdf).
+- **Loại**: Dành cho tân sinh viên.
+
+Nếu bạn cần thêm thông tin hoặc có thắc mắc nào khác, hãy cho tôi biết!
+
+
+############################################################
+L5 — Multi-turn — memory & Query Rewriter
+Luồng: cùng session_id + history qua nhiều lượt. Lượt sau: Rewriter hiểu «còn», «đơn đó» → retrieval_query đủ nghĩa. Có thể 1 agent (L1/L2) hoặc multi-agent tùy câu. Cần không reset phiên giữa các lượt.
+############################################################
+
+============================================================
+[L5-01 - luot 1]
+------------------------------------------------------------
+CAU HOI:
+Cho tôi biết đơn xin nghỉ học dưới 7 ngày của KMA.
+
+CAU TRA LOI:
+Đơn xin nghỉ học tạm thời (dưới 7 ngày) của Học viện Kỹ thuật Mật mã (KMA) có thông tin như sau:
+
+- **Tên biểu mẫu**: Đơn xin nghỉ học tạm thời (dưới 7 ngày)
+- **Loại**: Nghỉ học
+- **Tải biểu mẫu**: [Tại đây](https://kma.edu.vn/docs/bieu_mau/08-Don_nghi_hoc_duoi_7_ngay.doc)
+
+Nếu bạn cần, có thể gõ «điền giúp tôi» để hệ thống hỏi từng mục và tạo file Word đã điền cho bạn.
+
+============================================================
+[L5-01 - luot 2]
+------------------------------------------------------------
+CAU HOI:
+Còn nếu nghỉ trên 7 ngày thì sao?
+
+CAU TRA LOI:
+Nếu nghỉ học tạm thời trên 7 ngày, sinh viên cần sử dụng biểu mẫu sau:
+
+- **Tên biểu mẫu**: Đơn xin nghỉ học tạm thời (trên 7 ngày)
+- **Loại**: Nghỉ học
+- **Tải biểu mẫu**: [Tại đây](https://kma.edu.vn/docs/bieu_mau/09-Don_nghi_hoc_tren_7_ngay.doc)
+
+Biểu mẫu này được sử dụng để xin phép nghỉ học trong thời gian dài hơn 7 ngày. Nếu bạn cần, có thể gõ «điền giúp tôi» để hệ thống hỏi từng mục và tạo file Word đã điền cho bạn.
+
+============================================================
+[L5-02 - luot 1]
+------------------------------------------------------------
+CAU HOI:
+Điểm trúng tuyển CNTT Hà Nội năm 2024 của KMA?
+
+CAU TRA LOI:
+Điểm trúng tuyển ngành Công nghệ thông tin (Cơ sở Hà Nội) của Học viện Kỹ thuật Mật mã (KMA) năm 2024 là 26.10. 
+
+Thông tin chi tiết về tuyển sinh năm 2024:
+- Chỉ tiêu: 140 sinh viên
+- Số lượng sinh viên nhập học dự kiến: 150
+- Phương thức xét tuyển: Xét tuyển theo kết quả kỳ thi tốt nghiệp THPT do Bộ Giáo dục và Đào tạo tổ chức. 
+
+Nếu bạn cần thêm thông tin hoặc có câu hỏi khác, hãy cho tôi biết!
+
+============================================================
+[L5-02 - luot 2]
+------------------------------------------------------------
+CAU HOI:
+Còn an toàn thông tin thì điểm bao nhiêu?
+
+CAU TRA LOI:
+Điểm trúng tuyển ngành An toàn thông tin (Cơ sở Hà Nội) của Học viện Kỹ thuật Mật mã (KMA) năm 2024 là 25.95. 
+
+Thông tin chi tiết về tuyển sinh năm 2024:
+- Chỉ tiêu: 280 sinh viên
+- Số lượng sinh viên nhập học dự kiến: 280
+- Phương thức xét tuyển: Xét tuyển theo kết quả kỳ thi tốt nghiệp THPT do Bộ Giáo dục và Đào tạo tổ chức.
+
+Nếu bạn cần thêm thông tin hoặc có câu hỏi khác, hãy cho tôi biết!
+
+============================================================
+[L5-06 - luot 1]
+------------------------------------------------------------
+CAU HOI:
+Quy chế đào tạo đại học KMA 2025 áp dụng cho ai?
+
+CAU TRA LOI:
+Quy chế đào tạo đại học KMA 2025 áp dụng cho các đối tượng sau:
+
+1. **Đối tượng áp dụng**: 
+   - Quy chế này áp dụng chung cho các cơ sở đào tạo của Học viện Kỹ thuật mật mã, bao gồm:
+     - Cơ sở đào tạo chính của Học viện tại Hà Nội.
+     - Phân hiệu Học viện Kỹ thuật mật mã tại TP. Hồ Chí Minh.
+
+2. **Đối tượng học viên - sinh viên**:
+   - Quy chế này quy định chung về tổ chức và quản lý đào tạo trình độ đại học, bao gồm các quy định đối với học viên - sinh viên (sau đây gọi chung là sinh viên).
+
+3. **Căn cứ để ban hành**:
+   - Quy chế này là căn cứ để Giám đốc Học viện Kỹ thuật mật mã ban hành các văn bản quy định cụ thể trong quá trình triển khai công tác đào tạo và công tác khảo thí. 
+
+Thông tin này được nêu rõ trong Điều 1 của Quy chế đào tạo trình độ đại học của Học viện Kỹ thuật mật mã.
+
+============================================================
+[L5-06 - luot 2]
+------------------------------------------------------------
+CAU HOI:
+Giải thích thêm về học phần và tín chỉ.
+
+CAU TRA LOI:
+Dựa trên tài liệu quy chế đào tạo đại học của Học viện Kỹ thuật mật mã, dưới đây là các thông tin chi tiết về học phần và tín chỉ:
+
+### 1. Giải thích về học phần trong quy chế đào tạo đại học của Học viện Kỹ thuật mật mã:
+- **Khái niệm**: Học phần là các môn học hoặc học phần trong chương trình đào tạo, được xây dựng theo đơn vị tín chỉ.
+- **Cấu trúc**: Chương trình đào tạo được cấu trúc từ các học phần, bao gồm cả học phần bắt buộc và học phần tự chọn.
+- **Đăng ký học phần**: Sinh viên sẽ đăng ký học phần vào đầu mỗi học kỳ, và các học phần này sẽ có thời khóa biểu học phần riêng.
+- **Lớp học phần**: Là lớp học gồm những sinh viên đăng ký học cùng một học phần và có cùng thời khóa biểu học phần. Lớp học phần tự giải thể khi kết thúc học phần.
+- **Quản lý lớp học**: Mỗi lớp học sẽ có một mã số riêng, có đội ngũ cán bộ lớp, cố vấn học tập và giáo viên chủ nhiệm.
+
+### 2. Giải thích về tín chỉ trong quy chế đào tạo đại học của Học viện Kỹ thuật mật mã:
+- **Khối lượng học tập**: Tín chỉ là đơn vị đo lường khối lượng học tập của sinh viên. Chương trình đào tạo đại học cấp bằng cử nhân có khối lượng học tập tối thiểu là 120 tín chỉ (không bao gồm khối lượng giáo dục thể chất và giáo dục quốc phòng - an ninh).
+- **Chương trình đào tạo kỹ sư**: Đối với chương trình đào tạo đại học cấp bằng kỹ sư, khối lượng học tập tối thiểu là 150 tín chỉ (cũng không bao gồm khối lượng giáo dục thể chất và giáo dục quốc phòng - an ninh).
+- **Tích lũy tín chỉ**: Sinh viên có thể tích lũy tín chỉ của từng học phần và thực hiện chương trình đào tạo theo kế hoạch học tập cá nhân, phù hợp với kế hoạch giảng dạy của cơ sở đào tạo.
+- **Thời gian học tập**: Thời gian tối đa để hoàn thành khóa học được quy định dựa trên số tín chỉ đã tích lũy, với thời gian tối đa không quá 06 năm học đối với chương trình đào tạo cử nhân và không quá 08 năm học đối với chương trình đào tạo kỹ sư.
+
+Thông tin trên được trích dẫn từ các điều khoản trong tài liệu quy chế đào tạo đại học của Học viện Kỹ thuật mật mã.
+
+============================================================
+[L5-08 - luot 1]
+------------------------------------------------------------
+CAU HOI:
+Mã trường KMA?
+
+CAU TRA LOI:
+Mã trường KMA là: KMA.
+
+============================================================
+[L5-08 - luot 2]
+------------------------------------------------------------
+CAU HOI:
+Số điện thoại tuyển sinh?
+
+CAU TRA LOI:
+Số điện thoại liên hệ tuyển sinh của Học viện Kỹ thuật Mật mã là: 0986622772.
+
+============================================================
+[L5-08 - luot 3]
+------------------------------------------------------------
+CAU HOI:
+Phân hiệu TP.HCM ở đâu?
+
+CAU TRA LOI:
+Phân hiệu Học viện Kỹ thuật mật mã tại TP. Hồ Chí Minh có địa chỉ: 17A đường Cộng Hòa, phường 4, quận Tân Bình, TP. Hồ Chí Minh.
+
+
+############################################################
+L6 — Biểu mẫu — catalog & form fill
+Luồng: agent bieu_mau — catalog.json (tìm tên/link đơn) + Qdrant; hoặc nhánh form_fill (điền Word, hỏi từng field). Pipeline có thể: native_rag, hybrid_rag, multi_agent, form_fill.
+############################################################
+
+============================================================
+[L6-01]
+------------------------------------------------------------
+CAU HOI:
+Trong catalog biểu mẫu KMA, mẫu khai BHYT sinh viên ATTT và file hướng dẫn khai BHYT tên gì?
+
+CAU TRA LOI:
+Trong catalog biểu mẫu KMA, mẫu khai BHYT sinh viên ATTT có tên là **Mẫu khai BHYT sinh viên ATTT**. Bạn có thể tải mẫu này tại đường dẫn: [/docs/bieu_mau/24-Mau_khai_BHYT_sv_ATTT.doc](https://example.com/docs/bieu_mau/24-Mau_khai_BHYT_sv_ATTT.doc).
+
+Ngoài ra, file hướng dẫn khai BHYT có tên là **Hướng dẫn khai BHYT sinh viên**, và bạn có thể tải file này tại đường dẫn: [/docs/bieu_mau/25-Huong_dan_khai_BHYT.doc](https://example.com/docs/bieu_mau/25-Huong_dan_khai_BHYT.doc). 
+
+Nếu bạn cần thêm thông tin, hãy cho tôi biết!
+
+============================================================
+[L6-02]
+------------------------------------------------------------
+CAU HOI:
+Điền giúp tôi giấy xác nhận sinh viên.
+
+CAU TRA LOI:
+Đã chọn mẫu **Giấy xác nhận sinh viên**.
+
+Cần điền (0/17 trường cần điền). Gõ **một lượt** để xem danh sách, rồi gửi **mỗi dòng một câu trả lời** (theo thứ tự), hoặc trả lời từng mục.
+
+**1/17.** Họ và tên đầy đủ của bạn?
+**2/17.** Số điện thoại của bạn là gì?
+**3/17.** Ngày, tháng, năm sinh của bạn?
+**4/17.** Giới tính của bạn là gì?
+**5/17.** Số CCCD hoặc CMND của bạn?
+**6/17.** Ngày cấp CCCD/CMND của bạn?
+**7/17.** Nơi cấp CCCD/CMND của bạn?
+**8/17.** Địa chỉ hộ khẩu thường trú của bạn?
+**9/17.** Địa chỉ nơi ở hiện nay của gia đình bạn?
+**10/17.** Bạn đang theo học loại hình đào tạo nào?
+**11/17.** Bạn đang theo học hệ nào?
+**12/17.** Ngành học của bạn là gì?
+**13/17.** Bạn học lớp nào?
+**14/17.** Mã sinh viên của bạn là gì?
+**15/17.** Bạn đang học kỳ nào?
+**16/17.** Năm học hiện tại của bạn là gì?
+**17/17.** Thời gian khóa học của bạn từ tháng nào đến tháng nào?
+
+_Bạn có thể trả lời **từng mục**, hoặc gõ **một lượt** để xem danh sách câu hỏi rồi gửi **mỗi dòng một câu trả lời** (theo đúng thứ tự)._
+
+============================================================
+[L6-03]
+------------------------------------------------------------
+CAU HOI:
+Tôi muốn tải đơn bảo lưu kết quả học tập — cho link hoặc tên file trong hệ thống KMA.
+
+CAU TRA LOI:
+Bạn có thể tải đơn bảo lưu kết quả học tập tại link sau: [Tải đơn bảo lưu kết quả học tập](https://kma.edu.vn/docs/bieu_mau/10-Don_bao_luu_ket_qua.doc). Tên file là "10-Don_bao_luu_ket_qua.doc". 
+
+Nếu bạn cần thêm thông tin hoặc hỗ trợ khác, hãy cho tôi biết!
+
+============================================================
+[L6-04]
+------------------------------------------------------------
+CAU HOI:
+Khác nhau giữa đơn nghỉ học dưới 7 ngày và trên 7 ngày của KMA?
+
+CAU TRA LOI:
+Khác nhau giữa đơn nghỉ học dưới 7 ngày và trên 7 ngày của KMA như sau:
+
+1. **Đơn xin nghỉ học tạm thời (dưới 7 ngày)**: Đây là mẫu đơn dành cho sinh viên xin nghỉ học trong thời gian ngắn, cụ thể là dưới 7 ngày. Mẫu đơn này có thể được sử dụng cho các lý do cá nhân hoặc sức khỏe mà không cần phải có sự phê duyệt quá nghiêm ngặt.
+
+2. **Đơn xin nghỉ học tạm thời (trên 7 ngày)**: Mẫu đơn này dành cho sinh viên xin nghỉ học trong thời gian dài hơn, cụ thể là trên 7 ngày. Việc xin nghỉ học trên 7 ngày thường yêu cầu lý do chính đáng hơn và có thể cần sự xem xét kỹ lưỡng hơn từ phía nhà trường.
+
+Hiện tại, không có thông tin cụ thể về quy định đặc biệt cho từng loại đơn trong tài liệu của KMA.
+

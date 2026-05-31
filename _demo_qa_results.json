@@ -1,0 +1,202 @@
+[
+  {
+    "tag": "L0-guardrail",
+    "question": "Xin chào!",
+    "answer": "Xin chào! Em là trợ lý ảo **đa tác tử** của Học viện Kỹ thuật Mật mã (KMA).\n\nEm hỗ trợ tra cứu **tài liệu chính thức** về: tuyển sinh & CTĐT, khảo thí & quy chế, ma trận đề thi, kết quả thi công bố, biểu mẫu & thủ tục.\n\nBạn muốn hỏi về mảng nào?",
+    "agents": [],
+    "pipeline": "guardrail",
+    "qc": 0.0,
+    "planner": false,
+    "elapsed": 0.0,
+    "ok": true
+  },
+  {
+    "tag": "L0-guardrail",
+    "question": "Thời tiết Hà Nội ngày mai thế nào?",
+    "answer": "Em là trợ lý ảo **Học viện Kỹ thuật Mật mã (KMA)**. Câu hỏi của bạn **nằm ngoài phạm vi** tài liệu và chức năng em hỗ trợ, nên em không tra cứu hay suy đoán thêm.\n\nEm có thể giúp các mảng sau (dựa trên tài liệu KMA):\n\n• **Trợ lý Tuyển sinh & CTĐT**: Tuyển sinh đại học/thạc sĩ, đề án tuyển sinh, điểm chuẩn, ngành học, chương trình đào tạo các ngành, thông tin nhập học.\n• **Trợ lý Khảo thí & Quy chế**: Quy chế đào tạo, chuẩn đầu ra ngoại ngữ, quy định thi, thi tốt nghiệp, sát hạch, quy trình khảo thí.\n• **Trợ lý Ma trận đề thi**: Ma trận đề thi, cấu trúc đề, môn học cụ thể (tin học, CSDL, toán, an toàn thông tin, kiểm thử, quản trị an toàn).\n• **Trợ lý Kết quả học tập & Thi**: Kết quả thi, điểm học kỳ, bảng điểm công bố theo MSSV (trong file PDF điểm), tốt nghiệp CT4, thi Anh văn, danh sách chứng chỉ.\n• **Trợ lý Biểu mẫu & Thủ tục**: Đơn từ, biểu mẫu, thủ tục hành chính sinh viên: nghỉ học, phúc khảo, cấp thẻ, BHYT, thực tập, ra trường, tài khoản MBank.\n• **Trợ lý Danh sách thi**: Danh sách sinh viên dự thi theo ngày, ca (sáng/chiều), phòng thi, môn thi; tra cứu MSSV trong bảng danh sách thi công bố.\n• **Trợ lý Lịch thi**: Lịch thi KTHP (kỳ thi học phần): học kỳ, năm học, đợt thi, ngày giờ thi từng môn; kthp_lan2_* là lịch thi lại (học lại, thi lần 2).\n\nBạn hãy đặt câu hỏi liên quan một trong các mảng trên (ví dụ: chuẩn đầu ra ngoại ngữ, đơn xin nghỉ học, ma trận đề thi, tuyển sinh 2025).",
+    "agents": [],
+    "pipeline": "guardrail",
+    "qc": 0.0,
+    "planner": false,
+    "elapsed": 0.0,
+    "ok": true
+  },
+  {
+    "tag": "tuyen_sinh-L1",
+    "question": "Mã trường của Học viện Kỹ thuật Mật mã trong đề án tuyển sinh 2025 là gì?",
+    "answer": "Trong **Đề án tuyển sinh trình độ đại học năm 2025**, **mã trường của Học viện Kỹ thuật mật mã là: KMA** [1].\n\n(Thông tin này cũng xuất hiện trong tài liệu “Thông tin tuyển sinh năm 2025”: “Mã cơ sở đào tạo trong tuyển sinh: KMA” [4].)",
+    "agents": [
+      "tuyen_sinh"
+    ],
+    "pipeline": "agentic_rag",
+    "qc": 0.536,
+    "planner": false,
+    "elapsed": 382.7,
+    "ok": true
+  },
+  {
+    "tag": "khao_thi-L1",
+    "question": "Sinh viên cần đạt tối thiểu bao nhiêu điểm TOEIC khi kết thúc học phần Tiếng Anh 1 theo quy định chuẩn ngoại ngữ KMA?",
+    "answer": "Theo quy định chuẩn ngoại ngữ của Học viện Kỹ thuật Mật mã, **khi kết thúc học phần Tiếng Anh 1 (TAHP1), sinh viên cần đạt tối thiểu 300 điểm TOEIC** [2], [5].\n\n### Căn cứ trong tài liệu:\n- **Bảng yêu cầu chuẩn theo từng trình độ** ghi:\n  - **Tiếng Anh 1: 3 tín chỉ, TOEIC tối thiểu 300** [5].\n- **Điều 6 – Chuẩn tiếng Anh** cũng ghi:\n  - **Tiếng Anh 1 (TAHP1): 3 tín chỉ, điểm TOEIC tối thiểu 300** [2].\n\n👉 Vì cả hai đoạn tài liệu đều thống nhất, mức tối thiểu là **300 TOEIC**.",
+    "agents": [
+      "khao_thi"
+    ],
+    "pipeline": "hybrid_rag",
+    "qc": 0.65,
+    "planner": false,
+    "elapsed": 54.8,
+    "ok": true
+  },
+  {
+    "tag": "ma_tran-L1",
+    "question": "Môn Tin học đại cương: tổng số câu trắc nghiệm và thời gian làm bài theo ma trận đề thi KMA?",
+    "answer": "Theo **ma trận đề thi môn Tin học đại cương** của Học viện Kỹ thuật Mật mã:\n\n1. **Tổng số câu trắc nghiệm**: **50 câu** ([1])  \n   - Trong tài liệu ghi rõ: **“Tổng số câu hỏi: 50 câu.”** ([1])\n\n2. **Thời gian làm bài**: **60 phút** ([1])  \n   - Trong tài liệu ghi rõ: **“Thời gian làm bài: 60 phút.”** ([1])",
+    "agents": [
+      "ma_tran"
+    ],
+    "pipeline": "agentic_rag",
+    "qc": 0.3,
+    "planner": true,
+    "elapsed": 40.2,
+    "ok": true
+  },
+  {
+    "tag": "diem_thi-L1",
+    "question": "Mã sinh viên AT200201 có đạt kiểm tra phân loại tiếng Anh đầu vào khóa A20C8D7 năm 2024 (lần 2) không?",
+    "answer": "Đã tra trong đúng tài liệu: **diem_thi/08_ket_qua_thi_anh_van_2024.pdf (tr.1)**, đợt  \n**“KẾT QUẢ KIỂM TRA PHÂN LOẠI TIẾNG ANH ĐẦU VÀO KHOÁ A20C8D7 NĂM 2024 (lần 2)”**.\n\nMSSV **AT200201** có trong mục: **“Danh sách sinh viên có kết quả ĐẠT khi làm bài thi tiếng Anh đầu vào.”**\n\n### Kết quả chi tiết (đúng theo hàng trong bảng)\n\n| Môn/đợt kiểm tra | MSSV | Họ và tên trong bảng | Lớp | Kết quả |\n|---|---|---|---|---|\n| Kiểm tra phân loại tiếng Anh đầu vào khoá A20C8D7 năm 2024 (lần 2) | AT200201 | Nguyễn Văn Hải Anh | AT20B | **ĐẠT** |\n\n✅ Kết luận: **Sinh viên MSSV AT200201 ĐẠT** kiểm tra phân loại tiếng Anh đầu vào khoá A20C8D7 năm 2024 (lần 2).",
+    "agents": [
+      "diem_thi"
+    ],
+    "pipeline": "grade_lookup",
+    "qc": 0.548,
+    "planner": false,
+    "elapsed": 16.7,
+    "ok": true
+  },
+  {
+    "tag": "bieu_mau-L1",
+    "question": "KMA có mẫu đơn xin phúc khảo bài thi không? Tên file trong catalog?",
+    "answer": "Dựa trên **catalog biểu mẫu KMA**, có thông tin như sau:\n\n1. **Học viện Kỹ thuật Mật mã có mẫu đơn xin phúc khảo bài thi không?**  \n   - **Có.** Trong danh mục có mục: **“Đơn xin phúc khảo bài thi”** [BM1].\n\n2. **Tên file của mẫu đơn xin phúc khảo bài thi trong catalog là gì?**  \n   - Tên file là: **`15-Don_phuc_khao_bai_thi.doc`** [BM1].",
+    "agents": [
+      "bieu_mau"
+    ],
+    "pipeline": "agentic_rag",
+    "qc": 0.575,
+    "planner": true,
+    "elapsed": 365.6,
+    "ok": true
+  },
+  {
+    "tag": "lich_thi-L1",
+    "question": "Lịch thi KTHP học kỳ 1 năm học 2025-2026 đợt 1 gồm những môn thi nào?",
+    "answer": "Lịch thi KTHP học kỳ 1 năm học 2025–2026 (đợt 1) (theo `lich_thi/kthp_ki1_20252026_dot1.pdf`):\n\n1. **C huyên đề chuyên ngành chuyên sâu** — Hình thức: Báo cáo — Thời gian: 7h T3, 14/10 — Địa điểm: Giảng đường TA1 — Khóa: AT18\n2. **Chủ nhật, ngày 25/5** — Hình thức: Tự luận — Thời gian: 13h T4, 22/10 — Địa điểm: Giảng đường TA1 — Khóa: Học lại\n3. **Tiếng Anh 1** — Hình thức: T.Nghiệm + T.Luận — Thời gian: 13h T4, 22/10 — Địa điểm: Giảng đường TA1 — Khóa: Học lại\n4. **M ã độc** — Hình thức: Trắc nghiệm — Thời gian: 13 T4, 15/10 — Địa điểm: Giảng đường TA1 — Khóa: AT19\n5. **Thiết kế mạch sử dụng máy tính** — Hình thức: Báo cáo — Thời gian: 13h T4, 22/10 — Địa điểm: Giảng đường TA1 — Khóa: Học lại\n6. **C ông nghệ phần mềm** — Hình thức: Báo cáo — Thời gian: 7h T6, 17/10 — Địa điểm: Giảng đường TA1 — Khóa: AT19\n7. **Lập trình hợp ngữ** — Hình thức: Thực hành — Thời gian: 13h T4, 22/10 — Địa điểm: Giảng đường TA1 — Khóa: Học lại\n8. **T hiết kế giao diện người dùng** — Hình thức: Báo cáo — Thời gian: 7h T2, 20/10 — Địa điểm: Giảng đường TA1 — Khóa: AT19\n9. **Q uản lý an toàn thông tin** — Hình thức: Tự luận — Thời gian: 7h T3, 21/10 — Địa điểm: Giảng đường TA1 — Khóa: AT19\n10. **C ông nghệ web an toàn** — Hình thức: TN+TL — Thời gian: 7h T6, 24/10 — Địa điểm: Giảng đường TA1 — Khóa: AT19\n11. **N guyên lý hệ điều hành** — Hình thức: Trắc nghiệm — Thời gian: 7h T2, 20/10 — Địa điểm: Giảng đường TA1 — Khóa: AT20, CT8\n12. **H ệ quản trị cơ sở dữ liệu** — Hình thức: Trắc nghiệm — Thời gian: 7h T4, 22/10 — Địa điểm: Giảng đường TA1 — Khóa: AT20, CT8\n13. **C ấu trúc dữ liệu và giải thuật** — Hình thức: Tự luận — Thời gian: 7h T5, 23/10 — Địa điểm: Giảng đường TA1 — Khóa: AT20, CT8\n14. **K ỹ thuật truyền số liệu** — Hình thức: Trắc nghiệm — Thời gian: 7h T4, 15/10 — Địa điểm: Giảng đường TA1 — Khóa: AT20, CT8, DT7\n15. **T iếng Anh 3** — Hình thức: Trắc nghiệm — Thời gian: 13h T6, 17/10 — Địa điểm: Giảng đường TA1 — Khóa: AT20, CT8, DT7\n16. **L ập trình hướng đối tượng** — Hình thức: Thực hành — Thời gian: 7h T2, 20/10 — Địa điểm: 201-TB5 — Khóa: AT21, CT9\n17. **G iáo dục thể chất 3** — Hình thức: Thực hành — Thời gian: 7h T3, T4, 14, 15/10 — Địa điểm: Sân tập — Khóa: AT21, CT9, DT8\n18. **V ật lý đại cương 2** — Hình thức: Trắc nghiệm — Thời gian: 7h T6, 17/10 — Địa điểm: Giảng đường TA1 — Khóa: AT21, CT9, DT8\n19. **T ư tưởng Hồ Chí Minh** — Hình thức: Trắc nghiệm — Thời gian: 7h T5, 23/10 — Địa điểm: Giảng đường TA1 — Khóa: AT21, CT9, DT8\n20. **T oán xác suất thống kê** — Hình thức: Tự luận — Thời gian: 7h T6, 24/10 — Địa điểm: Giảng đường TA1 — Khóa: AT21, CT9, DT8\n21. **P hát triển game trên Android** — Hình thức: Báo cáo — Thời gian: 7h T4, 15/10 — Địa điểm: Giảng đường TA1 — Khóa: CT6\n22. **L ập trình Android nâng cao** — Hình thức: Báo cáo — Thời gian: 7h T6, 17/10 — Địa điểm: Giảng đường TA1 — Khóa: CT6\n23. **H ệ thống thông tin di động** — Hình thức: Trắc nghiệm — Thời gian: 7h T3, 14/10 — Địa điểm: Giảng đường TA1 — Khóa: CT7\n24. **L ập trình hợp ngữ** — Hình thức: Thực hành — Thời gian: 7h T6, 17/10 — Địa điểm: 201-TB5 — Khóa: CT7\n25. **C ông nghệ phần mềm nhúng** — Hình thức: Báo cáo — Thời gian: 13h T2, 20/10 — Địa điểm: Giảng đường TA1 — Khóa: CT7\n26. **L ý thuyết độ phức tạp tính toán** — Hình thức: Tự luận — Thời gian: 9h T5, 23/10 — Địa điểm: Giảng đường TA1 — Khóa: CT7\n27. **Đ iện tử công nghiệp** — Hình thức: Báo cáo — Thời gian: 7h T3, 14/10 — Địa điểm: Giảng đường TA1 — Khóa: DT6\n28. **H ệ thống nhúng** — Hình thức: Báo cáo — Thời gian: 7h T4, 15/10 — Địa điểm: Giảng đường TA1 — Khóa: DT6\n29. **M ật mã lý thuyết** — Hình thức: Trắc nghiệm — Thời gian: 7h T3, 21/10 — Địa điểm: Giảng đường TA1 — Khóa: DT6\n30. **C ơ sở thiết kế VLSI** — Hình thức: Tự luận — Thời gian: 9h T2, 22/10 — Địa điểm: Giảng đường TA1 — Khóa: DT6\n31. **T hiết bị ngoại vi và kỹ thuật ghép nối** — Hình thức: Tự luận — Thời gian: 7h T6, 24/10 — Địa điểm: Giảng đường TA1 — Khóa: DT6\n32. **Đ iện tử công suất** — Hình thức: Báo cáo — Thời gian: 7h T4, 15/10 — Địa điểm: Giảng đường TA1 — Khóa: DT7\n33. **T ín hiệu và hệ thống** — Hình thức: Tự luận — Thời gian: 7h T2, 20/10 — Địa điểm: Giảng đường TA1 — Khóa: DT7\n34. **C ơ sở điều khiển tự động** — Hình thức: Tự luận — Thời gian: 7h T4, 22/10 — Địa điểm: Giảng đường TA1 — Khóa: DT7\n35. **K ỹ thuật điện** — Hình thức: Trắc nghiệm — Thời gian: 7h T4, 22/10 — Địa điểm: Giảng đường TA1 — Khóa: DT8\n36. **P hương pháp tính** — Hình thức: Tự luận — Thời gian: 13h T3, 21/10 — Địa điểm: Giảng đường TA1 — Khóa: Học lại\n37. **O tomat và ngôn ngữ hình thức** — Hình thức: Tự luận — Thời gian: 13h T4, 22/10 — Địa điểm: Giảng đường TA1 — Khóa: Học lại\n38. **...** — Hình thức: Thực hành — Thời gian: 13h T4, 22/10 — Địa điểm: Giảng đường TA1 — Khóa: Học lại",
+    "agents": [
+      "lich_thi"
+    ],
+    "pipeline": "schedule_extract",
+    "qc": 0.1,
+    "planner": false,
+    "elapsed": 4.5,
+    "ok": true
+  },
+  {
+    "tag": "danh_sach_thi-L2",
+    "question": "Sinh viên AT200201 thi ngày 21/4/2026 buổi sáng: ca thi và phòng thi là gì?",
+    "answer": "Không tìm thấy MSSV **AT200201** trong danh sách thi (đã lọc theo ngày 21/04/2026). File đã tra: `danh_sach_thi/danh-sach-thi-sang-thu-3-ngay-21-4-2026.pdf`. Kiểm tra đúng ngày (vd. file *ngay-22-4-2026*) hoặc ingest `danh_sach_thi`.",
+    "agents": [
+      "danh_sach_thi"
+    ],
+    "pipeline": "exam_list_extract",
+    "qc": 0.15,
+    "planner": false,
+    "elapsed": 7.8,
+    "ok": true
+  },
+  {
+    "tag": "tuyen_sinh-L2",
+    "question": "So sánh điểm trúng tuyển năm 2023 và 2024 của ngành An toàn thông tin (cơ sở Hà Nội) theo đề án tuyển sinh KMA.",
+    "answer": "Dựa trên bảng trong **Đề án tuyển sinh 2024** của KMA, dòng **“An toàn thông tin (Cơ sở Hà Nội)”** có các số liệu: **300 298 25.90 270 266 25.60** [1].  \nTheo cấu trúc bảng này, điểm trúng tuyển tương ứng là:\n\n1. **Điểm trúng tuyển năm 2023** (ngành An toàn thông tin – cơ sở Hà Nội): **25.60** [1].\n\n2. **Điểm trúng tuyển năm 2024** (ngành An toàn thông tin – cơ sở Hà Nội): **25.90** [1].\n\n3. **Mức chênh lệch và xu hướng**:\n   - Chênh lệch: **25.90 - 25.60 = 0.30 điểm**.\n   - Xu hướng: **tăng** từ năm 2023 sang năm 2024 [1].\n\nNếu bạn muốn, mình có thể trình bày thêm theo dạng bảng so sánh ngắn (2023 vs 2024) cho dễ nhìn.",
+    "agents": [
+      "tuyen_sinh"
+    ],
+    "pipeline": "agentic_rag",
+    "qc": 0.7,
+    "planner": true,
+    "elapsed": 367.7,
+    "ok": true
+  },
+  {
+    "tag": "khao_thi-L2",
+    "question": "Theo bảng chuẩn tiếng Anh, sinh viên cần bao nhiêu tín chỉ tích lũy và TOEIC tối thiểu khi kết thúc Tiếng Anh 2?",
+    "answer": "Theo **bảng chuẩn tiếng Anh** trong tài liệu KMA:\n\n1. **Khi kết thúc Tiếng Anh 2, sinh viên cần tích lũy tối thiểu 3 tín chỉ** [5].  \n2. **Khi kết thúc Tiếng Anh 2, sinh viên cần đạt tối thiểu 350 điểm TOEIC** [5].\n\n(Thông tin này cũng trùng khớp với bảng ở Điều 6: TAHP2 = 3 tín chỉ, TOEIC tối thiểu 350 [2].)",
+    "agents": [
+      "khao_thi"
+    ],
+    "pipeline": "agentic_rag",
+    "qc": 0.6,
+    "planner": true,
+    "elapsed": 38.5,
+    "ok": true
+  },
+  {
+    "tag": "multi_agent-L3",
+    "question": "Điểm chuẩn ngành Công nghệ thông tin năm 2024 theo đề án tuyển sinh KMA là bao nhiêu? Cho tôi tên file mẫu đơn nhập học trong catalog.",
+    "answer": "Bạn hỏi 2 ý, mình gộp lại theo đúng thông tin từ các chuyên gia như sau:\n\n1) **Điểm chuẩn ngành Công nghệ thông tin năm 2024 (theo đề án tuyển sinh KMA)**  \n- **Theo Trợ lý Tuyển sinh & CTĐT:** trong đoạn trích [1] có các mức điểm xuất hiện ở ngành CNTT:\n  - CNTT (cơ sở Hà Nội): **26.60** và **26.20**  \n  - CNTT (cơ sở TP.HCM): **25.30**  \n  Tuy nhiên, chuyên gia này nhấn mạnh **không thấy tiêu đề cột đầy đủ** nên **chưa thể khẳng định chắc chắn cột nào là điểm chuẩn 2024** chỉ từ đoạn trích đó.  \n- **Theo Trợ lý Biểu mẫu & Thủ tục:** bộ tài liệu họ dùng (catalog + trích đoạn thủ tục nhập học) **không có thông tin điểm chuẩn CNTT 2024**.\n\n=> Vì vậy, với dữ liệu hiện có từ hai nguồn chuyên gia, **chưa thể chốt duy nhất một mức “điểm chuẩn 2024”** một cách chắc chắn.\n\n2) **Tên file mẫu đơn/biểu mẫu nhập học trong catalog**  \n- **Theo Trợ lý Biểu mẫu & Thủ tục:** tên file là **`Thu_tuc_nhap_hoc_2024.pdf`** (mục “Thủ tục nhập học 2024”).  \n- **Theo Trợ lý Tuyển sinh & CTĐT:** không tìm thấy thông tin này trong phần tài liệu họ truy xuất.\n\nNếu bạn muốn, mình có thể giúp bạn soạn một câu hỏi xác minh ngắn để gửi bộ phận tuyển sinh nhằm chốt chính xác “điểm chuẩn 2024” cho từng cơ sở.",
+    "agents": [
+      "tuyen_sinh",
+      "bieu_mau"
+    ],
+    "pipeline": "multi_agent",
+    "qc": 0.7,
+    "planner": true,
+    "elapsed": 698.4,
+    "ok": true
+  },
+  {
+    "tag": "multi_agent-L3",
+    "question": "Chuẩn TOEIC trước khi nhận đề tài đồ án tốt nghiệp KMA là bao nhiêu? Mẫu đơn xin phúc khảo bài thi tên file gì?",
+    "answer": "Bạn hỏi 2 ý, và hiện có **kết quả khác nhau giữa 2 nguồn chuyên gia** nên mình tách rõ để bạn tiện đối chiếu:\n\n- **Chuẩn TOEIC trước khi nhận đề tài đồ án/khóa luận tốt nghiệp**\n  - Theo **Trợ lý Khảo thí & Quy chế**: mốc là **450 TOEIC** (ghi ở Bảng 1: “Trước khi nhận đề tài đồ án/khóa luận tốt nghiệp: 450”).\n  - Theo **Trợ lý Biểu mẫu & Thủ tục**: **không tìm thấy thông tin TOEIC** trong tập tài liệu họ tra cứu.\n  - => Hai nguồn chưa thống nhất; nếu cần dùng chính thức, bạn nên xác nhận lại từ phòng/ban Khảo thí hoặc văn bản quy chế gốc mới nhất.\n\n- **Tên file mẫu đơn xin phúc khảo bài thi**\n  - Theo **Trợ lý Biểu mẫu & Thủ tục**: file là **`15-Don_phuc_khao_bai_thi.doc`**; đường dẫn catalog: **`/docs/bieu_mau/15-Don_phuc_khao_bai_thi.doc`**.\n  - Theo **Trợ lý Khảo thí & Quy chế**: **không tìm thấy tên file** trong phần tài liệu họ có.\n\nTóm lại: thông tin có độ chắc hơn hiện tại là **tên file phúc khảo: `15-Don_phuc_khao_bai_thi.doc`**; còn **mốc TOEIC 450** có 1 nguồn xác nhận và 1 nguồn chưa tìm thấy.",
+    "agents": [
+      "khao_thi",
+      "bieu_mau"
+    ],
+    "pipeline": "multi_agent",
+    "qc": 0.471,
+    "planner": true,
+    "elapsed": 64.7,
+    "ok": true
+  },
+  {
+    "tag": "planner-L4",
+    "question": "Em là tân sinh viên KMA nhập học 2024: cho em biết tổng tiền phải nộp khi làm thủ tục, cần mang những giấy tờ gì (ít nhất 5 mục), và trang tuyển sinh chính thức là gì?",
+    "answer": "Chào em, anh/chị gộp lại theo từng ý và **giữ nguyên khác biệt giữa 2 nguồn** để em dễ đối chiếu:\n\n**1) Tổng tiền phải nộp khi làm thủ tục nhập học 2024**\n- Theo **Trợ lý Biểu mẫu & Thủ tục** (trích `Thu_tuc_nhap_hoc_2024.pdf`): tổng tiền là **10.896.940 VNĐ**.  \n  Gồm:\n  - Học phí HK1 (tạm thu): **450.000 x 20 tín chỉ = 9.000.000 VNĐ**\n  - BHYT 14 tháng (01/11/2024–31/12/2025): **1.031.940 VNĐ**\n  - Lệ phí thư viện cả khóa: **500.000 VNĐ**\n  - Thẻ sinh viên: **100.000 VNĐ**\n  - Khám sức khỏe: **265.000 VNĐ**\n- Theo **Trợ lý Tuyển sinh & CTĐT**: trong bộ tài liệu tuyển sinh mà trợ lý này dùng thì **không có đủ dữ liệu để tính tổng tiền nhập học 2024**; chỉ thấy thông tin rời rạc như học phí dự kiến theo tín chỉ và lệ phí xét tuyển theo quy định chung.\n\n**2) Giấy tờ cần mang (ít nhất 5 mục)**\n- Theo **Trợ lý Biểu mẫu & Thủ tục**: có danh sách **12 mục**; em có thể chuẩn bị tối thiểu các mục sau (lấy từ danh sách đó):\n  - Bản sao Giấy báo trúng tuyển kiêm Giấy báo nhập học\n  - Bản sao công chứng học bạ THPT/Bổ túc văn hóa\n  - Bản sao công chứng giấy chứng nhận tốt nghiệp hoặc bằng tốt nghiệp\n  - Bản sao giấy khai sinh và CCCD\n  - Sơ yếu lý lịch HSSV (02 bản) có dán ảnh\n  - Giấy tờ ưu tiên (nếu có)\n  - Bản sao thẻ BHYT (nếu thuộc diện dùng BHYT ưu tiên/hộ gia đình)\n  - Sổ Đoàn\n  - Phiếu sinh viên (do Học viện cấp)\n  - Bản photo công chứng chứng chỉ tiếng Anh (nếu dùng để cộng điểm ưu tiên)\n  - Giấy đăng ký NVQS + giấy di chuyển NVQS (nam, bắt buộc)\n  - Giấy giới thiệu chuyển sinh hoạt Đảng (nếu là đảng viên)\n- Theo **Trợ lý Tuyển sinh & CTĐT**: tài liệu mà trợ lý này dùng **không liệt kê cụ thể** danh mục giấy tờ nhập học 2024 (chỉ có cụm “giấy tờ hợp lệ” mang tính chung).\n\n**3) Trang tuyển sinh chính thức**\n- Theo **Trợ lý Tuyển sinh & CTĐT**: trang tuyển sinh chính thức là **`http://tuyensinh.actvn.edu.vn`** (được nêu trong Đề án tuyển sinh 2024).\n- Theo **Trợ lý Biểu mẫu & Thủ tục**: không thấy thông tin này trong tài liệu mà trợ lý đó tra cứu.\n\nNếu em cần, anh/chị có thể giúp em làm ngay một checklist “mang đi nộp hồ sơ” dạng tick-box để in ra dùng ngày nhập học.",
+    "agents": [
+      "tuyen_sinh",
+      "bieu_mau"
+    ],
+    "pipeline": "multi_agent",
+    "qc": 0.825,
+    "planner": true,
+    "elapsed": 372.1,
+    "ok": true
+  },
+  {
+    "tag": "planner-L4",
+    "question": "Cho biết sinh viên AT200401 và AT200201 trong kết quả phân loại tiếng Anh đầu vào A20C8D7 2024 (lần 2), đồng thời nêu điểm TOEIC tối thiểu trước đồ án theo quy định chuẩn ngoại ngữ KMA.",
+    "answer": "Tra cứu trong tài liệu **diem_thi/08_ket_qua_thi_anh_van_2024.pdf (tr.2)**:\n\n### 1) Kết quả phân loại tiếng Anh đầu vào (A20C8D7 2024 – lần 2)\n\n> Trong dữ liệu bạn cung cấp có mục: **“Danh sách sinh viên KHÔNG ĐẠT tiếng Anh đầu vào”**.\n\n| MSSV | Họ và tên | Lớp | Kết quả |\n|---|---|---|---|\n| **AT200401** | Trần Trường An | AT20D | **KHÔNG ĐẠT** |\n| **AT200201** | — | — | **Không có trong danh sách trích xuất** (không thấy ở đoạn bảng đã cung cấp) |\n\n---\n\n### 2) Điểm TOEIC tối thiểu trước đồ án theo quy định chuẩn ngoại ngữ Học viện Kỹ thuật Mật mã\n\nTrong **tài liệu được cung cấp ở trên** không có dòng nào nêu mức điểm TOEIC tối thiểu trước đồ án, nên mình **không thể kết luận từ nguồn này**.  \nNếu bạn gửi thêm văn bản “quy định chuẩn ngoại ngữ” của Học viện, mình sẽ trích đúng mức điểm ngay.",
+    "agents": [
+      "diem_thi"
+    ],
+    "pipeline": "grade_lookup",
+    "qc": 0.8,
+    "planner": false,
+    "elapsed": 20.8,
+    "ok": true
+  },
+  {
+    "tag": "multi_turn-L5",
+    "question": "Cho tôi biết đơn xin nghỉ học dưới 7 ngày của KMA. | Còn nếu nghỉ trên 7 ngày thì sao?",
+    "answer": "Lượt 1:\nThông tin về **đơn xin nghỉ học có phép dưới 7 ngày** của Học viện Kỹ thuật Mật mã (KMA) theo tài liệu bạn cung cấp:\n\n1. **Tên biểu mẫu**\n   - **Đơn xin nghỉ học tạm thời (dưới 7 ngày)** [BM1], [1].\n\n2. **Tên file gốc**\n   - **08-Don_nghi_hoc_duoi_7_ngay.doc** [BM1], [1].\n\n3. **Loại biểu mẫu**\n   - **Nghỉ học** [BM1].\n\n4. **Đường dẫn tải**\n   - **/docs/bieu_mau/08-Don_nghi_hoc_duoi_7_ngay.doc** [BM1].\n\n5. **Nguồn xác nhận trong tài liệu**\n   - Tài liệu ghi rõ đây là:  \n     “**Tài liệu KMA — Đơn xin nghỉ học tạm thời (dưới 7 ngày)** … File: **08-Don_nghi_hoc_duoi_7_ngay.doc**” [1].\n\n6. **Phạm vi tài liệu (được nêu kèm)**\n   - Thuộc nhóm: đơn từ/biểu mẫu/thủ tục hành chính sinh viên, gồm các mảng như nghỉ học, phúc khảo, cấp thẻ, BHYT, thực tập, ra trường, tài khoản MBank [1].\n\n> Lưu ý: Trong các đoạn bạn cung cấp, **không có nội dung chi tiết các mục cần điền trong đơn** (ví dụ: họ tên, lớp, lý do, thời gian nghỉ, xác nhận…). Chỉ có thông tin định danh biểu mẫu như trên.\n---\nLượt 2:\nNếu **nghỉ học trên 7 ngày**, trong tài liệu KMA có thông tin như sau:\n\n1. **Tên biểu mẫu**\n   - **Đơn xin nghỉ học tạm thời (trên 7 ngày)** [BM1], [7].\n\n2. **Tên file gốc**\n   - **09-Don_nghi_hoc_tren_7_ngay.doc** [BM1], [7].\n\n3. **Loại biểu mẫu**\n   - **Nghỉ học** [BM1].\n\n4. **Đường dẫn tải**\n   - **/docs/bieu_mau/09-Don_nghi_hoc_tren_7_ngay.doc** [BM1].\n\n5. **Mô tả trong tài liệu**\n   - “Tài liệu KMA — Đơn xin nghỉ học tạm thời (trên 7 ngày)” [7].\n   - Thuộc phạm vi: đơn từ/biểu mẫu/thủ tục hành chính sinh viên (nghỉ học, phúc khảo, cấp thẻ, BHYT, thực tập, ra trường, tài khoản MBank) [7].\n\n6. **Phần chưa có trong tài liệu được cung cấp**\n   - Không có nội dung chi tiết về các mục điền trong đơn, điều kiện duyệt, quy trình nộp, thời hạn xử lý.  \n   - Chỉ xác nhận được thông tin định danh biểu mẫu như trên [7], [BM1].  \n\nNếu bạn muốn, bạn có thể yêu cầu: **“điền giúp tôi đơn nghỉ học trên 7 ngày”** để mình hỗ trợ lần lượt từng mục theo biểu mẫu.",
+    "ok": true
+  }
+]

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xác thực OTP — KMA Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/admin/admin.css">
+</head>
+<body>
+  <div class="admin-top">Xác thực hai lớp — OTP email</div>
+  <header class="admin-brand-bar">
+    <div class="inner">
+      <img src="/static/logo.png" alt="KMA" width="56" height="56">
+      <div>
+        <h1>Xác thực OTP</h1>
+        <p id="email-hint-line">Mã đã gửi tới email đăng ký</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="admin-page">
+    <div class="admin-card">
+      <div class="admin-card-head">
+        <div class="admin-icon"><i class="fas fa-envelope-circle-check"></i></div>
+        <h2>Nhập mã OTP</h2>
+        <p class="sub">6 chữ số — có hiệu lực trong thời gian giới hạn</p>
+      </div>
+
+      <div id="info-box" class="admin-alert info" style="display:none"></div>
+      <div id="error-box" class="admin-alert error" style="display:none"></div>
+
+      <form id="otp-form">
+        <div class="admin-field">
+          <label for="otp">Mã OTP</label>
+          <div class="admin-input-wrap">
+            <i class="fas fa-key"></i>
+            <input type="text" id="otp" class="otp-input" inputmode="numeric" maxlength="6" pattern="[0-9]*" autocomplete="one-time-code" required placeholder="000000">
+          </div>
+        </div>
+        <button type="submit" class="admin-btn admin-btn-primary" id="submit-btn" disabled>Xác nhận</button>
+        <div class="admin-row-links">
+          <button type="button" id="back-btn">← Quay lại đăng nhập</button>
+          <button type="button" id="resend-btn" disabled>Gửi lại OTP</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script src="/static/admin/admin-auth.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    let username = sessionStorage.getItem('otp_username') || params.get('username') || '';
+    if (username) sessionStorage.setItem('otp_username', username);
+    const emailHint = sessionStorage.getItem('otp_emailHint') || '';
+    const otpMessage = sessionStorage.getItem('otp_message') || '';
+
+    if (!username) {
+      window.location.replace('/admin/login');
+    }
+
+    document.getElementById('email-hint-line').textContent =
+      emailHint ? 'Gửi tới: ' + emailHint : 'Kiểm tra hộp thư đăng ký';
+
+    const infoBox = document.getElementById('info-box');
+    if (otpMessage) {
+      infoBox.textContent = otpMessage;
+      infoBox.style.display = 'block';
+    }
+
+    const otpInput = document.getElementById('otp');
+    const submitBtn = document.getElementById('submit-btn');
+    const errorBox = document.getElementById('error-box');
+    const resendBtn = document.getElementById('resend-btn');
+    let cooldown = 60;
+
+    otpInput.addEventListener('input', () => {
+      otpInput.value = otpInput.value.replace(/\D/g, '').slice(0, 6);
+      submitBtn.disabled = otpInput.value.length !== 6;
+    });
+
+    const tickCooldown = () => {
+      if (cooldown > 0) {
+        resendBtn.disabled = true;
+        resendBtn.textContent = 'Gửi lại (' + cooldown + 's)';
+        cooldown--;
+        setTimeout(tickCooldown, 1000);
+      } else {
+        resendBtn.disabled = false;
+        resendBtn.textContent = 'Gửi lại OTP';
+      }
+    };
+    tickCooldown();
+
+    document.getElementById('back-btn').onclick = () => {
+      sessionStorage.removeItem('otp_username');
+      sessionStorage.removeItem('otp_emailHint');
+      sessionStorage.removeItem('otp_message');
+      window.location.href = '/admin/login';
+    };
+
+    resendBtn.onclick = async () => {
+      if (cooldown > 0) return;
+      errorBox.style.display = 'none';
+      resendBtn.disabled = true;
+      try {
+        const body = new URLSearchParams({ username });
+        const res = await fetch('/auth/resend-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const msg = typeof data.detail === 'string' ? data.detail : 'Không gửi lại được OTP';
+          if (res.status === 429 && msg.includes('đợi')) {
+            const m = msg.match(/(\d+)\s*giây/);
+            if (m) {
+              cooldown = parseInt(m[1], 10);
+              tickCooldown();
+            }
+          }
+          throw new Error(msg);
+        }
+        infoBox.textContent = data.message || 'OTP mới đã được gửi';
+        infoBox.style.display = 'block';
+        cooldown = 60;
+        tickCooldown();
+        otpInput.value = '';
+        submitBtn.disabled = true;
+      } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.style.display = 'block';
+        resendBtn.disabled = false;
+      }
+    };
+
+    document.getElementById('otp-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorBox.style.display = 'none';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Đang xác thực...';
+
+      try {
+        const res = await fetch('/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, otp: otpInput.value }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.detail || 'Mã OTP không hợp lệ');
+
+        sessionStorage.removeItem('otp_username');
+        sessionStorage.removeItem('otp_emailHint');
+        sessionStorage.removeItem('otp_message');
+        AdminAuth.login(data.access_token, data.refresh_token, { username, role: data.role });
+        window.location.href = '/admin/dashboard';
+      } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.style.display = 'block';
+        otpInput.value = '';
+      } finally {
+        submitBtn.textContent = 'Xác nhận';
+        submitBtn.disabled = otpInput.value.length !== 6;
+      }
+    });
+  </script>
+</body>
+</html>

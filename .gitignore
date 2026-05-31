@@ -1,0 +1,10 @@
+.env
+__pycache__/
+venv/
+node_modules/
+data/filled_forms/*
+!data/filled_forms/.gitkeep
+.venv/
+.env.backup
+eval/results/
+guide/

@@ -1,0 +1,43 @@
+[
+  {
+    "tag": "danh_sach",
+    "q": "Tra danh sach thi ngay 21/4/2026 buoi sang: sinh vien AT200106 thi phong may, ca may?",
+    "a": "Không tìm thấy MSSV **AT200106** trong danh sách thi (đã lọc theo ngày 21/04/2026). File đã tra: `danh_sach_thi/danh-sach-thi-sang-thu-3-ngay-21-4-2026.pdf`. Kiểm tra đúng ngày (vd. file *ngay-22-4-2026*) hoặc ingest `danh_sach_thi`.",
+    "agents": [
+      "danh_sach_thi"
+    ]
+  },
+  {
+    "tag": "danh_sach2",
+    "q": "Sinh vien nao trong danh sach thi sang thu 3 ngay 21/4/2026 co MSSV AT200106? Cho phong va ca.",
+    "a": "Không tìm thấy MSSV **AT200106** trong danh sách thi (đã lọc theo ngày 21/04/2026). File đã tra: `danh_sach_thi/danh-sach-thi-sang-thu-3-ngay-21-4-2026.pdf`. Kiểm tra đúng ngày (vd. file *ngay-22-4-2026*) hoặc ingest `danh_sach_thi`.",
+    "agents": [
+      "danh_sach_thi"
+    ]
+  },
+  {
+    "tag": "tuyen",
+    "q": "Diem chuan nganh Cong nghe thong tin nam 2024 theo de an tuyen sinh KMA (co so Ha Noi) la bao nhieu?",
+    "a": "Theo trích đoạn tài liệu bạn cung cấp, ở dòng **“Công nghệ thông tin (Cơ sở Hà Nội)”** có các số liệu:\n\n- **200 | 194 | 26.60 | 130 | 124 | 26.20** (theo phương thức xét điểm thi tốt nghiệp THPT) [1].\n\nVì đoạn trích **không kèm tiêu đề các cột năm**, nên chưa thể khẳng định tuyệt đối số nào đúng là “điểm chuẩn năm 2024”.  \nTuy nhiên, các mức điểm chuẩn xuất hiện ở dòng này là:\n\n- **26.60** [1]  \n- **26.20** [1]\n\nNếu bạn muốn, mình có thể giúp bạn đối chiếu đúng cột năm 2024 khi có thêm phần tiêu đề bảng trong cùng trang PDF.",
+    "agents": [
+      "tuyen_sinh"
+    ]
+  },
+  {
+    "tag": "multi",
+    "q": "Diem chuan CNTT Ha Noi 2024 la bao nhieu? Ten file don nhap hoc trong catalog bieu mau la gi?",
+    "a": "Bạn hỏi 2 ý, mình gộp lại như sau (theo đúng thông tin các chuyên gia đã trả lời):\n\n1) **Điểm chuẩn Công nghệ thông tin Hà Nội 2024**\n- Theo Trợ lý Tuyển sinh: trong đoạn trích có dòng  \n  **“Công nghệ thông tin (Cơ sở Hà Nội) … 200 194 26.60 130 124 26.20”**.  \n- Tuy nhiên, vì **không có tiêu đề cột đầy đủ**, nên **chưa thể khẳng định chắc chắn số nào là điểm chuẩn riêng của năm 2024**.  \n- Thông tin chắc chắn rút ra được từ đoạn này: có **2 mức điểm xuất hiện là 26.60 và 26.20**.\n\n2) **Tên file “đơn nhập học” trong catalog biểu mẫu**\n- Theo Trợ lý Biểu mẫu & Thủ tục: trong catalog, mục liên quan là **“Thủ tục nhập học 2024”**.\n- **Tên file:** `Thu_tuc_nhap_hoc_2024.pdf`.\n- Lưu ý: catalog ghi là **“Thủ tục nhập học”**, **không ghi một mẫu riêng tên “Đơn nhập học”**.\n\nNếu bạn muốn, mình có thể giúp bạn soạn luôn câu hỏi xác minh gửi KMA (ngắn gọn) để hỏi đúng “điểm chuẩn CNTT Hà Nội 2024 là mức nào trong 26.60/26.20”.",
+    "agents": [
+      "tuyen_sinh",
+      "bieu_mau"
+    ]
+  },
+  {
+    "tag": "planner2",
+    "q": "Cho biet AT200401 va AT200201 trong ket qua phan loai tieng Anh dau vao A20C8D7 2024 lan 2. Diem TOEIC toi thieu truoc de tai do an la bao nhieu?",
+    "a": "Mình đã rà đúng theo các bảng bạn gửi, nhưng **không thấy bảng/đợt nào có tiêu đề “kết quả phân loại tiếng Anh đầu vào A20C8D7 2024 lần 2”** (không có cột Đạt/Không đạt tiếng Anh, cũng không có mức TOEIC yêu cầu).\n\nVì vậy, với câu hỏi của bạn:\n\n1) **AT200401 và AT200201 trong kết quả phân loại tiếng Anh đầu vào A20C8D7 2024 lần 2**  \n- **Không có dữ liệu phân loại tiếng Anh trong tài liệu đã cung cấp** để kết luận ĐẠT/KHÔNG ĐẠT cho 2 MSSV này.\n\n2) **Điểm TOEIC tối thiểu trước đề tài đồ án**  \n- **Không có thông tin trong tài liệu đã cung cấp** về ngưỡng TOEIC tối thiểu này.\n\n> Nếu bạn gửi đúng file/bảng “phân loại tiếng Anh đầu vào … lần 2” hoặc quy định TOEIC của KMA, mình sẽ trích chính xác theo từng dòng cho AT200401 và AT200201.",
+    "agents": [
+      "diem_thi"
+    ]
+  }
+]

@@ -1,0 +1,4848 @@
+{
+  "version": "3.0",
+  "project": "KMA Multi-Agent Chatbot",
+  "purpose": "test_tay",
+  "description": "100 câu test trực tiếp trên http://127.0.0.1:8000 — copy câu hỏi, so sánh câu trả lời chatbot với mục «Câu trả lời đúng cần có». Gold facts trích từ docs/. Cần ingest_all.py + Qdrant trước khi test.",
+  "api_endpoint": "POST /chat",
+  "tier_distribution": {
+    "L0": "Guardrail — không vào RAG (8)",
+    "L1": "Đơn giản — 1 agent, native/hybrid, supervisor (20)",
+    "L2": "Trung bình — hybrid/agentic/grade_lookup (22)",
+    "L3": "Multi-agent — supervisor multi_domain (17)",
+    "L4": "Phức tạp — planner + agentic/multi (15)",
+    "L5": "Multi-turn — memory & rewrite (12)",
+    "L6": "Biểu mẫu — catalog & form_fill (6)"
+  },
+  "scoring_notes": {
+    "agents": "subset hoặc agents_exact; not_agents / min_agents cho multi",
+    "supervisor_intent": "grade_result | form_procedure | multi_domain | single_domain",
+    "pipeline": "pipeline_any trên response hoặc per_agent[].pipeline",
+    "per_agent_pipelines": "Mỗi agent phải dùng pipeline trong danh sách",
+    "content": "must_contain_* / gold_facts / source_file_any",
+    "env": "KMA_ACCURACY_MODE=1, KMA_FAST_MODE=0, đã ingest_all.py"
+  },
+  "router_thresholds_local_qc": {
+    "native_rag": "Qc < 0.50",
+    "hybrid_rag": "0.50 ≤ Qc < 0.70",
+    "agentic_rag": "Qc ≥ 0.70"
+  },
+  "total_cases": 100,
+  "cases": [
+    {
+      "id": "L0-01",
+      "tier": "L0",
+      "title": "Chào hỏi",
+      "turns": [
+        {
+          "question": "Xin chào!"
+        }
+      ],
+      "expected": {
+        "agents": [],
+        "primary": "",
+        "pipeline_any": [
+          "guardrail"
+        ],
+        "in_scope": false,
+        "scope_category": "chitchat"
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "KMA",
+          "trợ lý"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "guardrail",
+        "chitchat"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Chào hỏi / giới thiệu trợ lý KMA và các mảng hỗ trợ. Không tra cứu tài liệu.",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L0-02",
+      "tier": "L0",
+      "title": "Cảm ơn",
+      "turns": [
+        {
+          "question": "Cảm ơn bạn nhé!"
+        }
+      ],
+      "expected": {
+        "agents": [],
+        "primary": "",
+        "pipeline_any": [
+          "guardrail"
+        ],
+        "in_scope": false,
+        "scope_category": "chitchat"
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "chitchat"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Chào hỏi / giới thiệu trợ lý KMA và các mảng hỗ trợ. Không tra cứu tài liệu.",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L0-03",
+      "tier": "L0",
+      "title": "Off-topic thời tiết",
+      "turns": [
+        {
+          "question": "Thời tiết Hà Nội ngày mai thế nào?"
+        }
+      ],
+      "expected": {
+        "agents": [],
+        "primary": "",
+        "pipeline_any": [
+          "guardrail"
+        ],
+        "in_scope": false,
+        "scope_category": "off_topic"
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "ngoài phạm vi",
+          "KMA"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "off_topic"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Từ chối nhẹ — câu ngoài phạm vi KMA. Gợi ý hỏi đúng mảng (tuyển sinh, quy chế, …).",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L0-04",
+      "tier": "L0",
+      "title": "Off-topic lập trình",
+      "turns": [
+        {
+          "question": "Viết code Python sắp xếp danh sách như thế nào?"
+        }
+      ],
+      "expected": {
+        "agents": [],
+        "primary": "",
+        "pipeline_any": [
+          "guardrail"
+        ],
+        "in_scope": false,
+        "scope_category": "off_topic"
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "off_topic"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Từ chối nhẹ — câu ngoài phạm vi KMA. Gợi ý hỏi đúng mảng (tuyển sinh, quy chế, …).",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L0-05",
+      "tier": "L0",
+      "title": "Trường khác",
+      "turns": [
+        {
+          "question": "Điểm chuẩn Đại học Bách Khoa Hà Nội năm 2025?"
+        }
+      ],
+      "expected": {
+        "agents": [],
+        "primary": "",
+        "pipeline_any": [
+          "guardrail"
+        ],
+        "in_scope": false,
+        "scope_category": "off_topic"
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "ngoài phạm vi"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "off_topic"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Từ chối nhẹ — câu ngoài phạm vi KMA. Gợi ý hỏi đúng mảng (tuyển sinh, quy chế, …).",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L0-06",
+      "tier": "L0",
+      "title": "Giới thiệu khả năng",
+      "turns": [
+        {
+          "question": "Bạn có thể giúp gì cho sinh viên KMA?"
+        }
+      ],
+      "expected": {
+        "agents": [],
+        "primary": "",
+        "pipeline_any": [
+          "guardrail"
+        ],
+        "in_scope": false,
+        "scope_category": "chitchat"
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "tuyển sinh",
+          "biểu mẫu",
+          "quy chế",
+          "ma trận",
+          "điểm"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "chitchat",
+        "capability"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Chào hỏi / giới thiệu trợ lý KMA và các mảng hỗ trợ. Không tra cứu tài liệu.",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-01",
+      "tier": "L1",
+      "title": "Mã trường KMA",
+      "turns": [
+        {
+          "question": "Mã trường của Học viện Kỹ thuật Mật mã trong đề án tuyển sinh 2025 là gì?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "single_domain",
+        "agents_exact": true,
+        "qc_max": 0.55
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [
+          "KMA"
+        ],
+        "source_file_any": [
+          "01_de_an_tuyen_sinh_2025.pdf"
+        ]
+      },
+      "tags": [
+        "tuyen_sinh",
+        "fact"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có:** KMA\n**Tài liệu tham chiếu:** 01_de_an_tuyen_sinh_2025.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-02",
+      "tier": "L1",
+      "title": "Website tuyển sinh",
+      "turns": [
+        {
+          "question": "Trang web tuyển sinh chính thức của KMA là gì?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "single_domain",
+        "agents_exact": true,
+        "qc_max": 0.55
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "tuyensinh.actvn.edu.vn",
+          "actvn"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "01_de_an_tuyen_sinh_2025.pdf"
+        ]
+      },
+      "tags": [
+        "tuyen_sinh"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** tuyensinh.actvn.edu.vn, actvn\n**Tài liệu tham chiếu:** 01_de_an_tuyen_sinh_2025.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-03",
+      "tier": "L1",
+      "title": "Khối tín chỉ cử nhân",
+      "turns": [
+        {
+          "question": "Khối lượng học tập tối thiểu chương trình cử nhân theo quy chế đào tạo KMA 2025 là bao nhiêu tín chỉ?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "khao_thi"
+        ],
+        "primary": "khao_thi",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "single_domain",
+        "agents_exact": true,
+        "qc_max": 0.55
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [
+          "120"
+        ],
+        "source_file_any": [
+          "25_quy_che_dao_tao_dai_hoc_2025.pdf"
+        ]
+      },
+      "tags": [
+        "khao_thi"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có:** 120\n**Tài liệu tham chiếu:** 25_quy_che_dao_tao_dai_hoc_2025.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-04",
+      "tier": "L1",
+      "title": "TOEIC Tiếng Anh 1",
+      "turns": [
+        {
+          "question": "Sinh viên cần đạt tối thiểu bao nhiêu điểm TOEIC khi kết thúc học phần Tiếng Anh 1 theo quy định chuẩn ngoại ngữ KMA?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "khao_thi"
+        ],
+        "primary": "khao_thi",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "single_domain",
+        "agents_exact": true,
+        "qc_max": 0.55
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [
+          "300"
+        ],
+        "source_file_any": [
+          "03_quy_dinh_chuan_ngoai_ngu_2025.pdf"
+        ]
+      },
+      "tags": [
+        "khao_thi"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có:** 300\n**Tài liệu tham chiếu:** 03_quy_dinh_chuan_ngoai_ngu_2025.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-05",
+      "tier": "L1",
+      "title": "Ma trận THĐC — số câu",
+      "turns": [
+        {
+          "question": "Môn Tin học đại cương: tổng số câu trắc nghiệm và thời gian làm bài theo ma trận đề thi KMA?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "ma_tran"
+        ],
+        "primary": "ma_tran",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "single_domain",
+        "agents_exact": true,
+        "qc_max": 0.55
+      },
+      "rubric": {
+        "must_contain_all": [
+          "50",
+          "60"
+        ],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "13_ma_tran_de_thi_tin_hoc_dai_cuong.pdf"
+        ]
+      },
+      "tags": [
+        "ma_tran"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có đủ:** 50, 60\n**Tài liệu tham chiếu:** 13_ma_tran_de_thi_tin_hoc_dai_cuong.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-06",
+      "tier": "L1",
+      "title": "Ma trận Toán A3 — khoa",
+      "turns": [
+        {
+          "question": "Môn Toán cao cấp A3 thuộc khoa nào theo ma trận đề thi?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "ma_tran"
+        ],
+        "primary": "ma_tran",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "single_domain",
+        "agents_exact": true,
+        "qc_max": 0.55
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "Cơ bản"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "21_ma_tran_toan_cao_cap_a3.pdf"
+        ]
+      },
+      "tags": [
+        "ma_tran"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** Cơ bản\n**Tài liệu tham chiếu:** 21_ma_tran_toan_cao_cap_a3.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-07",
+      "tier": "L1",
+      "title": "Đơn phúc khảo",
+      "turns": [
+        {
+          "question": "KMA có mẫu đơn xin phúc khảo bài thi không? Tên file trong catalog?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "form_procedure",
+        "agents_exact": true,
+        "qc_max": 0.55
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "phúc khảo",
+          "15-Don_phuc_khao"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "bieu_mau",
+        "catalog"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** phúc khảo, 15-Don_phuc_khao",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-08",
+      "tier": "L1",
+      "title": "Đơn nghỉ dưới 7 ngày",
+      "turns": [
+        {
+          "question": "Sinh viên xin nghỉ học tạm thời dưới 7 ngày dùng đơn nào?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "form_procedure",
+        "agents_exact": true,
+        "qc_max": 0.55
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "08-Don",
+          "dưới 7"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "bieu_mau"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 08-Don, dưới 7",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-09",
+      "tier": "L1",
+      "title": "SV đạt TA đầu vào",
+      "turns": [
+        {
+          "question": "Mã sinh viên AT200201 có đạt kiểm tra phân loại tiếng Anh đầu vào khóa A20C8D7 năm 2024 (lần 2) không?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "diem_thi"
+        ],
+        "primary": "diem_thi",
+        "pipeline_any": [
+          "grade_lookup",
+          "hybrid_rag",
+          "agentic_rag",
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "grade_result",
+        "agents_exact": true,
+        "qc_max": 0.65
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "ĐẠT",
+          "đạt",
+          "AT200201"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "08_ket_qua_thi_anh_van_2024.pdf"
+        ]
+      },
+      "tags": [
+        "diem_thi"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** ĐẠT, đạt, AT200201\n**Tài liệu tham chiếu:** 08_ket_qua_thi_anh_van_2024.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-10",
+      "tier": "L1",
+      "title": "SV không đạt TA",
+      "turns": [
+        {
+          "question": "Sinh viên AT200401 có trong danh sách ĐẠT tiếng Anh đầu vào A20C8D7 2024 (lần 2) không?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "diem_thi"
+        ],
+        "primary": "diem_thi",
+        "pipeline_any": [
+          "grade_lookup",
+          "hybrid_rag",
+          "agentic_rag",
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "grade_result",
+        "agents_exact": true,
+        "qc_max": 0.65
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "KHÔNG",
+          "không đạt",
+          "AT200401"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "08_ket_qua_thi_anh_van_2024.pdf"
+        ]
+      },
+      "tags": [
+        "diem_thi"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** KHÔNG, không đạt, AT200401\n**Tài liệu tham chiếu:** 08_ket_qua_thi_anh_van_2024.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-11",
+      "tier": "L1",
+      "title": "Điểm chuẩn CNTT (không diem_thi)",
+      "turns": [
+        {
+          "question": "Điểm chuẩn ngành Công nghệ thông tin năm 2024 theo đề án tuyển sinh KMA là bao nhiêu?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "single_domain",
+        "agents_exact": true,
+        "not_agents": [
+          "diem_thi"
+        ],
+        "qc_max": 0.55
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "26.20",
+          "26,20",
+          "26.60",
+          "26,60"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "02_de_an_tuyen_sinh_2024.pdf"
+        ]
+      },
+      "tags": [
+        "routing",
+        "tuyen_sinh",
+        "admission"
+      ],
+      "notes": "Supervisor không được gán diem_thi cho «điểm chuẩn».",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 26.20, 26,20, 26.60, 26,60\n**Tài liệu tham chiếu:** 02_de_an_tuyen_sinh_2024.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-12",
+      "tier": "L1",
+      "title": "Chuẩn VSTEP",
+      "turns": [
+        {
+          "question": "Học viện có công nhận chứng chỉ VSTEP không?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "khao_thi"
+        ],
+        "primary": "khao_thi",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "single_domain",
+        "agents_exact": true,
+        "not_agents": [
+          "diem_thi",
+          "tuyen_sinh"
+        ],
+        "qc_max": 0.55
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "VSTEP"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "03_quy_dinh_chuan_ngoai_ngu_2025.pdf"
+        ]
+      },
+      "tags": [
+        "khao_thi"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** VSTEP\n**Tài liệu tham chiếu:** 03_quy_dinh_chuan_ngoai_ngu_2025.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-13",
+      "tier": "L1",
+      "title": "Ma trận — không nhầm tuyển sinh",
+      "turns": [
+        {
+          "question": "Ma trận đề thi môn Tin học đại cương gồm những phần nào?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "ma_tran"
+        ],
+        "primary": "ma_tran",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "single_domain",
+        "agents_exact": true,
+        "not_agents": [
+          "tuyen_sinh"
+        ],
+        "qc_max": 0.55
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "13_ma_tran_de_thi_tin_hoc_dai_cuong.pdf"
+        ]
+      },
+      "tags": [
+        "ma_tran"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).\n**Tài liệu tham chiếu:** 13_ma_tran_de_thi_tin_hoc_dai_cuong.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-14",
+      "tier": "L1",
+      "title": "Tổng phí nhập học",
+      "turns": [
+        {
+          "question": "Tổng số tiền phải nộp khi làm thủ tục nhập học theo hướng dẫn KMA 2024 là bao nhiêu?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "form_procedure",
+        "agents_exact": true,
+        "qc_max": 0.55
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [
+          "10.896.940",
+          "10896940"
+        ],
+        "source_file_any": [
+          "Thu_tuc_nhap_hoc_2024.pdf"
+        ]
+      },
+      "tags": [
+        "bieu_mau"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có:** 10.896.940 · 10896940\n**Tài liệu tham chiếu:** Thu_tuc_nhap_hoc_2024.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-01",
+      "tier": "L2",
+      "title": "So sánh điểm TS ATTT",
+      "turns": [
+        {
+          "question": "So sánh điểm trúng tuyển năm 2023 và 2024 của ngành An toàn thông tin (cơ sở Hà Nội) theo đề án tuyển sinh KMA."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "single_domain",
+        "agents_exact": true,
+        "not_agents": [
+          "diem_thi"
+        ],
+        "qc_min": 0.45
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "25.60",
+          "25.90",
+          "25,90",
+          "25.95"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "tuyen_sinh",
+        "compare"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 25.60, 25.90, 25,90, 25.95",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-02",
+      "tier": "L2",
+      "title": "Liệt kê tổ hợp TS 2025",
+      "turns": [
+        {
+          "question": "Liệt kê các tổ hợp môn xét tuyển đại học chính quy KMA năm 2025."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "qc_min": 0.4
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "A00",
+          "A01",
+          "Toán"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "tuyen_sinh",
+        "list"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** A00, A01, Toán",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-03",
+      "tier": "L2",
+      "title": "CDIO CNTT",
+      "turns": [
+        {
+          "question": "Chương trình CNTT chính quy KMA theo hướng tiếp cận nào và mã chương trình là gì?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "qc_min": 0.4
+      },
+      "rubric": {
+        "must_contain_all": [
+          "CDIO",
+          "KMC.1.1.1"
+        ],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "23_chuong_trinh_dao_tao_cntt.pdf"
+        ]
+      },
+      "tags": [
+        "tuyen_sinh"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có đủ:** CDIO, KMC.1.1.1\n**Tài liệu tham chiếu:** 23_chuong_trinh_dao_tao_cntt.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-04",
+      "tier": "L2",
+      "title": "Đối tượng chuẩn NN",
+      "turns": [
+        {
+          "question": "Quy định chuẩn ngoại ngữ KMA không áp dụng cho những đối tượng sinh viên nào?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "khao_thi"
+        ],
+        "primary": "khao_thi",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "qc_min": 0.4
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "kỹ sư tài năng",
+          "chất lượng cao"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "khao_thi"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** kỹ sư tài năng, chất lượng cao",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-05",
+      "tier": "L2",
+      "title": "TOEIC TA2",
+      "turns": [
+        {
+          "question": "Theo bảng chuẩn tiếng Anh, sinh viên cần bao nhiêu tín chỉ tích lũy và TOEIC tối thiểu khi kết thúc Tiếng Anh 2?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "khao_thi"
+        ],
+        "primary": "khao_thi",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "qc_min": 0.45
+      },
+      "rubric": {
+        "must_contain_all": [
+          "3",
+          "350"
+        ],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "khao_thi",
+        "table"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có đủ:** 3, 350",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-06",
+      "tier": "L2",
+      "title": "Ma trận THĐC — mức độ",
+      "turns": [
+        {
+          "question": "Trong ma trận Tin học đại cương, tổng điểm phân bổ NB, TH, VD, VDC lần lượt là bao nhiêu?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "ma_tran"
+        ],
+        "primary": "ma_tran",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "qc_min": 0.45
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "10",
+          "22"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "13_ma_tran_de_thi_tin_hoc_dai_cuong.pdf"
+        ]
+      },
+      "tags": [
+        "ma_tran"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 10, 22\n**Tài liệu tham chiếu:** 13_ma_tran_de_thi_tin_hoc_dai_cuong.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-07",
+      "tier": "L2",
+      "title": "Ma trận CSDL",
+      "turns": [
+        {
+          "question": "Ma trận đề thi môn Lý thuyết cơ sở dữ liệu có những phần nội dung chính nào?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "ma_tran"
+        ],
+        "primary": "ma_tran",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "qc_min": 0.4
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "14_ma_tran_de_thi_ly_thuyet_csdl.pdf"
+        ]
+      },
+      "tags": [
+        "ma_tran"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).\n**Tài liệu tham chiếu:** 14_ma_tran_de_thi_ly_thuyet_csdl.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-08",
+      "tier": "L2",
+      "title": "Giấy tờ nhập học",
+      "turns": [
+        {
+          "question": "Liệt kê ít nhất 6 loại giấy tờ sinh viên phải mang khi làm thủ tục nhập học KMA 2024."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "form_procedure",
+        "agents_exact": true,
+        "qc_min": 0.45
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "trúng tuyển",
+          "học bạ",
+          "CCCD"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "Thu_tuc_nhap_hoc_2024.pdf"
+        ]
+      },
+      "tags": [
+        "bieu_mau",
+        "list"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** trúng tuyển, học bạ, CCCD\n**Tài liệu tham chiếu:** Thu_tuc_nhap_hoc_2024.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-09",
+      "tier": "L2",
+      "title": "So sánh đơn nghỉ",
+      "turns": [
+        {
+          "question": "Khác nhau giữa đơn nghỉ học dưới 7 ngày và trên 7 ngày của KMA?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "qc_min": 0.4
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "08-Don",
+          "09-Don",
+          "7 ngày"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "bieu_mau",
+        "compare"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 08-Don, 09-Don, 7 ngày",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-10",
+      "tier": "L2",
+      "title": "File HK1 đợt 2",
+      "turns": [
+        {
+          "question": "File bảng điểm học kỳ 1 năm 2024-2025 đợt 2 của KMA tổng hợp những học phần nào (nêu ít nhất 3 tên)?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "diem_thi"
+        ],
+        "primary": "diem_thi",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "qc_min": 0.4
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "hk1_20242025",
+          "2024",
+          "2025"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "hk1_20242025_dot2.pdf"
+        ]
+      },
+      "tags": [
+        "diem_thi"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** hk1_20242025, 2024, 2025\n**Tài liệu tham chiếu:** hk1_20242025_dot2.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-11",
+      "tier": "L2",
+      "title": "CT060310 HK2 đợt 1",
+      "turns": [
+        {
+          "question": "CT060310 điểm học kỳ 2 năm 2024-2025 đợt 1"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "diem_thi"
+        ],
+        "primary": "diem_thi",
+        "pipeline_any": [
+          "grade_lookup",
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "grade_result",
+        "agents_exact": true,
+        "qc_min": 0.35,
+        "per_agent_pipelines": [
+          {
+            "agent_id": "diem_thi",
+            "pipeline_any": [
+              "grade_lookup",
+              "hybrid_rag",
+              "agentic_rag"
+            ]
+          }
+        ]
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "CT060310"
+        ],
+        "must_not_contain": [
+          "không tìm thấy thông tin trong tài liệu"
+        ],
+        "gold_facts": [],
+        "source_file_any": [
+          "hk2_20242025_dot1"
+        ]
+      },
+      "tags": [
+        "diem_thi",
+        "grade_lookup",
+        "mssv"
+      ],
+      "notes": "Kỳ vọng grade_lookup; trả lời có điểm/môn, không «không tìm thấy» khi MSSV có trong PDF.",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** CT060310\n**Không được:** không tìm thấy thông tin trong tài liệu\n**Tài liệu tham chiếu:** hk2_20242025_dot1",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-12",
+      "tier": "L2",
+      "title": "AT200106 TA đầu vào",
+      "turns": [
+        {
+          "question": "Sinh viên AT200106 có đạt phân loại tiếng Anh đầu vào A20C8D7 2024 (lần 2) không? Cho biết lớp nếu có."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "diem_thi"
+        ],
+        "primary": "diem_thi",
+        "pipeline_any": [
+          "grade_lookup",
+          "hybrid_rag",
+          "agentic_rag",
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "grade_result",
+        "agents_exact": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "AT200106",
+          "ĐẠT",
+          "đạt"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "08_ket_qua_thi_anh_van_2024.pdf"
+        ]
+      },
+      "tags": [
+        "diem_thi",
+        "grade_lookup"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** AT200106, ĐẠT, đạt\n**Tài liệu tham chiếu:** 08_ket_qua_thi_anh_van_2024.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-13",
+      "tier": "L2",
+      "title": "AT200201 điểm HK1 đợt 2",
+      "turns": [
+        {
+          "question": "Cho xem điểm học kỳ 1 năm 2024-2025 đợt 2 của sinh viên AT200201."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "diem_thi"
+        ],
+        "primary": "diem_thi",
+        "pipeline_any": [
+          "grade_lookup",
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "grade_result",
+        "agents_exact": true,
+        "per_agent_pipelines": [
+          {
+            "agent_id": "diem_thi",
+            "pipeline_any": [
+              "grade_lookup",
+              "hybrid_rag",
+              "agentic_rag"
+            ]
+          }
+        ]
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "AT200201"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "diem_thi",
+        "grade_lookup"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** AT200201",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-14",
+      "tier": "L2",
+      "title": "TOEIC trước đồ án",
+      "turns": [
+        {
+          "question": "Điểm TOEIC tối thiểu trước khi nhận đề tài đồ án tốt nghiệp theo quy định chuẩn ngoại ngữ KMA?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "khao_thi"
+        ],
+        "primary": "khao_thi",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "not_agents": [
+          "diem_thi"
+        ],
+        "qc_min": 0.4
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [
+          "450"
+        ],
+        "source_file_any": []
+      },
+      "tags": [
+        "khao_thi"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có:** 450",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-15",
+      "tier": "L2",
+      "title": "Hướng dẫn thi TN online",
+      "turns": [
+        {
+          "question": "KMA có tài liệu hướng dẫn thi tốt nghiệp online không? Nêu tên file."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "khao_thi"
+        ],
+        "primary": "khao_thi",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "22_huong_dan_thi_tot_nghiep_online.pdf"
+        ]
+      },
+      "tags": [
+        "khao_thi"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).\n**Tài liệu tham chiếu:** 22_huong_dan_thi_tot_nghiep_online.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-16",
+      "tier": "L2",
+      "title": "Thực tập — catalog",
+      "turns": [
+        {
+          "question": "Sinh viên cần giấy giới thiệu thực tập — tên biểu mẫu trong catalog KMA?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag",
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "form_procedure",
+        "agents_exact": true,
+        "qc_max": 0.6
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "18-Giay_gioi_thieu_thuc_tap",
+          "thực tập"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "bieu_mau",
+        "catalog"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 18-Giay_gioi_thieu_thuc_tap, thực tập",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L3-01",
+      "tier": "L3",
+      "title": "TS + phí nhập học",
+      "turns": [
+        {
+          "question": "Theo đề án tuyển sinh KMA 2025, phương thức tuyển sinh đại học chính quy là gì? Đồng thời theo hướng dẫn nhập học 2024, tổng số tiền phải nộp khi làm thủ tục là bao nhiêu?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh",
+          "bieu_mau"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "multi_agent",
+          "hybrid_rag",
+          "agentic_rag",
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "xét tuyển",
+          "10.896"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "multi_agent",
+        "supervisor"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** xét tuyển, 10.896",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L3-02",
+      "tier": "L3",
+      "title": "Quy chế + đơn phúc khảo",
+      "turns": [
+        {
+          "question": "Theo quy chế đào tạo KMA 2025, chương trình học được xây dựng theo đơn vị gì? Và sinh viên muốn phúc khảo bài thi cần dùng đơn/mẫu nào trong catalog?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "khao_thi",
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "tín chỉ",
+          "phúc khảo",
+          "15-Don"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "multi_agent"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **khao_thi, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** tín chỉ, phúc khảo, 15-Don",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L3-03",
+      "tier": "L3",
+      "title": "Chuẩn NN + điểm TA",
+      "turns": [
+        {
+          "question": "Chuẩn TOEIC tối thiểu trước khi nhận đề tài đồ án của KMA là bao nhiêu? Và sinh viên AT200106 có đạt tiếng Anh đầu vào khóa A20C8D7 2024 (lần 2) không?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "khao_thi",
+          "diem_thi"
+        ],
+        "primary": "khao_thi",
+        "pipeline_any": [
+          "multi_agent",
+          "hybrid_rag",
+          "agentic_rag",
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2
+      },
+      "rubric": {
+        "must_contain_all": [
+          "450"
+        ],
+        "must_contain_any": [
+          "AT200106",
+          "ĐẠT",
+          "đạt"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "multi_agent"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **khao_thi, diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có đủ:** 450\n**Phải có (một trong):** AT200106, ĐẠT, đạt",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L3-04",
+      "tier": "L3",
+      "title": "Ma trận + quy chế thi",
+      "turns": [
+        {
+          "question": "Ma trận Tin học đại cương quy định thời gian thi bao lâu? Quy chế đào tạo KMA 2025 quy định khối lượng tối thiểu cử nhân bao nhiêu tín chỉ?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "ma_tran",
+          "khao_thi"
+        ],
+        "primary": "ma_tran",
+        "pipeline_any": [
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "60",
+          "120"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "multi_agent"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **ma_tran, khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 60, 120",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L3-05",
+      "tier": "L3",
+      "title": "CTĐT + ma trận toán",
+      "turns": [
+        {
+          "question": "Chương trình CNTT KMA theo CDIO có mã ngành gì? Ma trận môn Toán cao cấp A3 thuộc khoa nào?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh",
+          "ma_tran"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "CDIO",
+          "7.48",
+          "Cơ bản"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "multi_agent"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh, ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** CDIO, 7.48, Cơ bản",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L3-06",
+      "tier": "L3",
+      "title": "Điểm chuẩn + mẫu nhập học",
+      "turns": [
+        {
+          "question": "Điểm trúng tuyển ngành CNTT Hà Nội năm 2024 của KMA là bao nhiêu? Và có mẫu đơn/biểu mẫu nào liên quan thủ tục nhập học trong catalog?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh",
+          "bieu_mau"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "multi_agent",
+          "hybrid_rag",
+          "agentic_rag",
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "26.20",
+          "26.60",
+          "26.1",
+          "nhập học",
+          "Thu_tuc"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "multi_agent"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 26.20, 26.60, 26.1, nhập học, Thu_tuc",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L3-07",
+      "tier": "L3",
+      "title": "TOEIC TA3 + ma trận THĐC",
+      "turns": [
+        {
+          "question": "Yêu cầu TOEIC khi kết thúc Tiếng Anh 3 theo quy định chuẩn ngoại ngữ KMA? Và môn Tin học đại cương có bao nhiêu câu trắc nghiệm theo ma trận?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "khao_thi",
+          "ma_tran"
+        ],
+        "primary": "khao_thi",
+        "pipeline_any": [
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2
+      },
+      "rubric": {
+        "must_contain_all": [
+          "450",
+          "50"
+        ],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "multi_agent"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **khao_thi, ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có đủ:** 450, 50",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L3-08",
+      "tier": "L3",
+      "title": "Kết quả TA + đơn hoãn thi",
+      "turns": [
+        {
+          "question": "Tài liệu kết quả thi Anh văn công bố 2024 của KMA dùng để tra cứu gì? Và đơn xin hoãn thi trong bộ biểu mẫu tên file gì?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "diem_thi",
+          "bieu_mau"
+        ],
+        "primary": "diem_thi",
+        "pipeline_any": [
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "14-Don_hoan_thi",
+          "Anh văn",
+          "08_ket_qua"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "multi_agent"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **diem_thi, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 14-Don_hoan_thi, Anh văn, 08_ket_qua",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L3-09",
+      "tier": "L3",
+      "title": "Quy chế + CTĐT CNTT",
+      "turns": [
+        {
+          "question": "Quy chế đào tạo 2025: khối lượng tối thiểu cử nhân? Chương trình CNTT: mã ngành đào tạo?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "khao_thi",
+          "tuyen_sinh"
+        ],
+        "primary": "khao_thi",
+        "pipeline_any": [
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2
+      },
+      "rubric": {
+        "must_contain_all": [
+          "120",
+          "7.48.01.01"
+        ],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "multi_agent"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **khao_thi, tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có đủ:** 120, 7.48.01.01",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L3-10",
+      "tier": "L3",
+      "title": "Thạc sĩ + mã trường",
+      "turns": [
+        {
+          "question": "KMA có danh sách trúng tuyển thạc sĩ ATTT 2025 không? Đề án tuyển sinh đại học 2025 ghi mã trường là gì?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "single_domain",
+        "agents_exact": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "KMA",
+          "thạc sĩ"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "09_trung_tuyen_thac_si_attt_2025.pdf"
+        ]
+      },
+      "tags": [
+        "tuyen_sinh",
+        "multi_topic"
+      ],
+      "notes": "Một agent đủ nếu cả hai ý cùng corpus tuyển sinh — không bắt 2 agent.",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** KMA, thạc sĩ\n**Tài liệu tham chiếu:** 09_trung_tuyen_thac_si_attt_2025.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L3-11",
+      "tier": "L3",
+      "title": "Đơn nghỉ + BHYT",
+      "turns": [
+        {
+          "question": "Sinh viên nghỉ học trên 7 ngày và cần cấp lại thẻ BHYT: dùng những đơn/mẫu nào trong catalog KMA?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "form_procedure",
+        "agents_exact": true,
+        "min_agents": 1
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "09-Don",
+          "16-Don",
+          "BHYT"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "bieu_mau",
+        "multi_topic"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 09-Don, 16-Don, BHYT",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L3-12",
+      "tier": "L3",
+      "title": "DT070103 + chứng chỉ TA",
+      "turns": [
+        {
+          "question": "Sinh viên DT070103 có đạt phân loại tiếng Anh đầu vào 2024 không? File danh sách nhận chứng chỉ tiếng Anh TA 2024 dùng để tra cứu gì?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "diem_thi"
+        ],
+        "primary": "diem_thi",
+        "pipeline_any": [
+          "grade_lookup",
+          "hybrid_rag",
+          "agentic_rag",
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "grade_result",
+        "agents_exact": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "DT070103"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "12_ds_nhan_chung_chi_ta_2024.pdf"
+        ]
+      },
+      "tags": [
+        "diem_thi",
+        "multi_topic"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** DT070103\n**Tài liệu tham chiếu:** 12_ds_nhan_chung_chi_ta_2024.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L4-01",
+      "tier": "L4",
+      "title": "Tổng hợp tân SV",
+      "turns": [
+        {
+          "question": "Em là tân sinh viên KMA nhập học 2024: cho em biết tổng tiền phải nộp khi làm thủ tục, học viện có ký túc xá không, cần mang những giấy tờ gì (ít nhất 5 mục), và trang tuyển sinh chính thức là gì?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau",
+          "tuyen_sinh"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "multi_agent",
+          "hybrid_rag",
+          "agentic_rag",
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2,
+        "planner_used": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "10.896",
+          "không có Ký túc xá",
+          "tuyensinh"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "planner",
+        "multi_agent"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau, tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 10.896, không có Ký túc xá, tuyensinh",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L4-02",
+      "tier": "L4",
+      "title": "Roadmap ngoại ngữ",
+      "turns": [
+        {
+          "question": "Giải thích lộ trình chuẩn tiếng Anh KMA: TOEIC tối thiểu sau Tiếng Anh 1, Tiếng Anh 2, Tiếng Anh 3, trước khi nhận đề tài đồ án; nêu rõ số tín chỉ tích lũy tương ứng từng mốc."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "khao_thi"
+        ],
+        "primary": "khao_thi",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag",
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "planner_used": true,
+        "qc_min": 0.5
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "300",
+          "350",
+          "450"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "planner",
+        "khao_thi",
+        "agentic"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 300, 350, 450",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L4-03",
+      "tier": "L4",
+      "title": "So sánh ngành TS",
+      "turns": [
+        {
+          "question": "So sánh chỉ tiêu, số nhập học và điểm trúng tuyển năm 2024 của ngành CNTT và An toàn thông tin (cơ sở Hà Nội) theo đề án tuyển sinh KMA."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag",
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "planner_used": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "26.20",
+          "26.60",
+          "25.90",
+          "25.95"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "planner",
+        "compare",
+        "tuyen_sinh"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 26.20, 26.60, 25.90, 25.95",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L4-04",
+      "tier": "L4",
+      "title": "Thi + đơn + quy chế",
+      "turns": [
+        {
+          "question": "Sinh viên KMA muốn phúc khảo kết quả thi, xin hoãn thi và cần biết quy chế đào tạo quy định chương trình học theo đơn vị tín chỉ — hướng dẫn từng thủ tục và tên đơn tương ứng."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "khao_thi",
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "multi_agent",
+          "hybrid_rag",
+          "agentic_rag",
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2,
+        "planner_used": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "phúc khảo",
+          "hoãn thi",
+          "tín chỉ",
+          "15-Don",
+          "14-Don"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "planner"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **khao_thi, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** phúc khảo, hoãn thi, tín chỉ, 15-Don, 14-Don",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L4-05",
+      "tier": "L4",
+      "title": "Ma trận 3 môn",
+      "turns": [
+        {
+          "question": "Trong tài liệu ma trận đề thi KMA, nêu tổng số câu và thời gian thi của Tin học đại cương, khoa phụ trách Toán cao cấp A3, và ít nhất hai phần nội dung của Lý thuyết CSDL."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "ma_tran"
+        ],
+        "primary": "ma_tran",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag",
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "planner_used": true
+      },
+      "rubric": {
+        "must_contain_all": [
+          "50",
+          "60"
+        ],
+        "must_contain_any": [
+          "Cơ bản",
+          "CSDL"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "planner",
+        "ma_tran"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có đủ:** 50, 60\n**Phải có (một trong):** Cơ bản, CSDL",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L4-06",
+      "tier": "L4",
+      "title": "Điểm TA + quy chế",
+      "turns": [
+        {
+          "question": "Cho biết sinh viên AT200401 và AT200201 trong kết quả phân loại tiếng Anh đầu vào A20C8D7 2024 (lần 2), đồng thời nêu điểm TOEIC tối thiểu trước đồ án theo quy định chuẩn ngoại ngữ KMA."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "diem_thi",
+          "khao_thi"
+        ],
+        "primary": "diem_thi",
+        "pipeline_any": [
+          "multi_agent",
+          "hybrid_rag",
+          "agentic_rag",
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2,
+        "planner_used": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "AT200401",
+          "AT200201",
+          "450"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "planner",
+        "multi_agent"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **diem_thi, khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** AT200401, AT200201, 450",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L4-07",
+      "tier": "L4",
+      "title": "Bảo lưu / tiếp tục / thôi học",
+      "turns": [
+        {
+          "question": "Sinh viên KMA đang cân nhắc bảo lưu kết quả, sau đó tiếp tục học hoặc thôi học: mỗi trường hợp dùng đơn nào trong catalog, khác nhau thế nào?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag",
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "planner_used": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "10-Don",
+          "11-Don",
+          "12-Don",
+          "bảo lưu"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "planner",
+        "bieu_mau"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 10-Don, 11-Don, 12-Don, bảo lưu",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L4-08",
+      "tier": "L4",
+      "title": "CNTT + thực tập + đồ án",
+      "turns": [
+        {
+          "question": "Sinh viên ngành CNTT KMA: mã ngành, hướng CDIO, đơn đăng ký đồ án lần 2 và giấy giới thiệu thực tập — tên file và mục đích từng biểu mẫu."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh",
+          "bieu_mau"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "multi_agent",
+          "hybrid_rag",
+          "agentic_rag",
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2,
+        "planner_used": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "7.48.01.01",
+          "17-Don",
+          "18-Giay"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "planner"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 7.48.01.01, 17-Don, 18-Giay",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L4-09",
+      "tier": "L4",
+      "title": "Ưu tiên nhập học + MBank",
+      "turns": [
+        {
+          "question": "Thủ tục nhập học KMA 2024: các khoản phí bắt buộc (học phí HK1 tạm thu, BHYT, thư viện, thẻ SV, khám SK), tài khoản ngân hàng nhận tiền, hướng dẫn mở tài khoản MBank và mẫu đăng ký TK MBank."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag",
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "planner_used": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "9.000.000",
+          "MBank",
+          "26-Dang_ky"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "planner",
+        "bieu_mau"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 9.000.000, MBank, 26-Dang_ky",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L4-10",
+      "tier": "L4",
+      "title": "HK điểm + tra cứu",
+      "turns": [
+        {
+          "question": "Bảng điểm học kỳ 1 năm 2024-2025 đợt 2 của KMA gồm những học phần/khóa nào, file PDF tên gì, và sinh viên tra cứu điểm cá nhân theo MSSV cần lưu ý gì?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "diem_thi"
+        ],
+        "primary": "diem_thi",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag",
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "planner_used": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "hk1_20242025_dot2"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "planner",
+        "diem_thi"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** hk1_20242025_dot2",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L5-01",
+      "tier": "L5",
+      "title": "Follow-up biểu mẫu",
+      "multi_turn": true,
+      "turns": [
+        {
+          "question": "Cho tôi biết đơn xin nghỉ học dưới 7 ngày của KMA.",
+          "expected": {
+            "agents": [
+              "bieu_mau"
+            ],
+            "agents_exact": true,
+            "supervisor_intent": "form_procedure"
+          },
+          "rubric": {}
+        },
+        {
+          "question": "Còn nếu nghỉ trên 7 ngày thì sao?",
+          "expected": {
+            "agents": [
+              "bieu_mau"
+            ],
+            "was_rewritten": true,
+            "must_any": [
+              "09-Don",
+              "trên 7"
+            ]
+          },
+          "rubric": {
+            "must_contain_any": [
+              "09-Don",
+              "trên 7",
+              "7 ngày"
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag",
+          "multi_agent",
+          "form_fill",
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma"
+      },
+      "rubric": {
+        "notes": ""
+      },
+      "tags": [
+        "memory",
+        "rewrite"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": [
+          "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).",
+          "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 09-Don, trên 7, 7 ngày"
+        ],
+        "how_to_test": "Gửi lần lượt các lượt trong CÙNG một cửa sổ chat (không F5)."
+      }
+    },
+    {
+      "id": "L5-02",
+      "tier": "L5",
+      "title": "Follow-up tuyển sinh",
+      "multi_turn": true,
+      "turns": [
+        {
+          "question": "Điểm trúng tuyển CNTT Hà Nội năm 2024 của KMA?",
+          "expected": {
+            "agents": [
+              "tuyen_sinh"
+            ],
+            "agents_exact": true,
+            "not_agents": [
+              "diem_thi"
+            ]
+          },
+          "rubric": {}
+        },
+        {
+          "question": "Còn an toàn thông tin thì điểm bao nhiêu?",
+          "expected": {
+            "agents": [
+              "tuyen_sinh"
+            ],
+            "was_rewritten": true
+          },
+          "rubric": {
+            "must_contain_any": [
+              "25.90",
+              "25.95",
+              "25,95",
+              "ATTT",
+              "an toàn"
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag",
+          "multi_agent",
+          "form_fill",
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma"
+      },
+      "rubric": {
+        "notes": ""
+      },
+      "tags": [
+        "memory",
+        "rewrite"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": [
+          "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).",
+          "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 25.90, 25.95, 25,95, ATTT, an toàn"
+        ],
+        "how_to_test": "Gửi lần lượt các lượt trong CÙNG một cửa sổ chat (không F5)."
+      }
+    },
+    {
+      "id": "L5-03",
+      "tier": "L5",
+      "title": "Follow-up ma trận",
+      "multi_turn": true,
+      "turns": [
+        {
+          "question": "Ma trận đề thi Tin học đại cương có bao nhiêu câu?",
+          "expected": {
+            "agents": [
+              "ma_tran"
+            ],
+            "agents_exact": true
+          },
+          "rubric": {}
+        },
+        {
+          "question": "Thời gian làm bài là bao lâu?",
+          "expected": {
+            "agents": [
+              "ma_tran"
+            ],
+            "was_rewritten": true
+          },
+          "rubric": {
+            "must_contain_any": [
+              "60",
+              "phút"
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "agents": [
+          "ma_tran"
+        ],
+        "primary": "ma_tran",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag",
+          "multi_agent",
+          "form_fill",
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma"
+      },
+      "rubric": {
+        "notes": ""
+      },
+      "tags": [
+        "memory",
+        "rewrite"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": [
+          "Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).",
+          "Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 60, phút"
+        ],
+        "how_to_test": "Gửi lần lượt các lượt trong CÙNG một cửa sổ chat (không F5)."
+      }
+    },
+    {
+      "id": "L5-04",
+      "tier": "L5",
+      "title": "Đổi mảng giữa phiên",
+      "multi_turn": true,
+      "turns": [
+        {
+          "question": "Chuẩn TOEIC trước khi làm đồ án tốt nghiệp KMA?",
+          "expected": {
+            "agents": [
+              "khao_thi"
+            ],
+            "agents_exact": true
+          },
+          "rubric": {}
+        },
+        {
+          "question": "Giờ cho tôi mẫu đơn phúc khảo bài thi.",
+          "expected": {
+            "agents": [
+              "bieu_mau"
+            ],
+            "agents_exact": true,
+            "supervisor_intent": "form_procedure"
+          },
+          "rubric": {
+            "must_contain_any": [
+              "phúc khảo",
+              "15-Don"
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag",
+          "multi_agent",
+          "form_fill",
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma"
+      },
+      "rubric": {
+        "notes": ""
+      },
+      "tags": [
+        "memory",
+        "topic_shift"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": [
+          "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).",
+          "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** phúc khảo, 15-Don"
+        ],
+        "how_to_test": "Gửi lần lượt các lượt trong CÙNG một cửa sổ chat (không F5)."
+      }
+    },
+    {
+      "id": "L5-05",
+      "tier": "L5",
+      "title": "Đại từ — điền đơn",
+      "multi_turn": true,
+      "turns": [
+        {
+          "question": "Tôi cần giấy xác nhận sinh viên để vay vốn ngân hàng.",
+          "expected": {
+            "agents": [
+              "bieu_mau"
+            ],
+            "agents_exact": true
+          },
+          "rubric": {}
+        },
+        {
+          "question": "Điền giúp tôi đơn đó được không?",
+          "expected": {
+            "pipeline_any": [
+              "form_fill"
+            ],
+            "agents": [
+              "bieu_mau"
+            ]
+          },
+          "rubric": {
+            "must_contain_any": [
+              "điền",
+              "mục",
+              "họ tên",
+              "xác nhận"
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "form_fill",
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma"
+      },
+      "rubric": {
+        "notes": ""
+      },
+      "tags": [
+        "form_fill",
+        "memory"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": [
+          "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).",
+          "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** điền, mục, họ tên, xác nhận"
+        ],
+        "how_to_test": "Gửi lần lượt các lượt trong CÙNG một cửa sổ chat (không F5)."
+      }
+    },
+    {
+      "id": "L5-06",
+      "tier": "L5",
+      "title": "Follow-up điểm MSSV",
+      "multi_turn": true,
+      "turns": [
+        {
+          "question": "CT060310 điểm học kỳ 2 năm 2024-2025 đợt 1",
+          "expected": {
+            "agents": [
+              "diem_thi"
+            ],
+            "agents_exact": true,
+            "supervisor_intent": "grade_result",
+            "pipeline_any": [
+              "grade_lookup",
+              "hybrid_rag",
+              "agentic_rag"
+            ]
+          },
+          "rubric": {}
+        },
+        {
+          "question": "Liệt kê các môn và điểm của bạn ấy.",
+          "expected": {
+            "agents": [
+              "diem_thi"
+            ],
+            "was_rewritten": true
+          },
+          "rubric": {
+            "must_contain_any": [
+              "CT060310"
+            ],
+            "must_not_contain": []
+          }
+        }
+      ],
+      "expected": {
+        "agents": [
+          "diem_thi"
+        ],
+        "primary": "diem_thi",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag",
+          "multi_agent",
+          "form_fill",
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma"
+      },
+      "rubric": {
+        "notes": ""
+      },
+      "tags": [
+        "memory",
+        "grade_lookup"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": [
+          "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).",
+          "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** CT060310"
+        ],
+        "how_to_test": "Gửi lần lượt các lượt trong CÙNG một cửa sổ chat (không F5)."
+      }
+    },
+    {
+      "id": "L5-07",
+      "tier": "L5",
+      "title": "Off-topic chen giữa",
+      "multi_turn": true,
+      "turns": [
+        {
+          "question": "Quy định miễn thi chuẩn tiếng Anh đầu ra KMA?",
+          "expected": {
+            "agents": [
+              "khao_thi"
+            ],
+            "agents_exact": true
+          },
+          "rubric": {}
+        },
+        {
+          "question": "Cho em hỏi giá Bitcoin hôm nay?",
+          "expected": {
+            "in_scope": false,
+            "scope_category": "off_topic",
+            "pipeline_any": [
+              "guardrail"
+            ]
+          },
+          "rubric": {}
+        },
+        {
+          "question": "Vậy TOEIC tối thiểu trước đồ án là bao nhiêu?",
+          "expected": {
+            "agents": [
+              "khao_thi"
+            ]
+          },
+          "rubric": {
+            "must_contain_any": [
+              "450"
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "agents": [
+          "khao_thi"
+        ],
+        "primary": "khao_thi",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag",
+          "multi_agent",
+          "form_fill",
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma"
+      },
+      "rubric": {
+        "notes": ""
+      },
+      "tags": [
+        "memory",
+        "guardrail_mid"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": [
+          "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).",
+          "Từ chối nhẹ — câu ngoài phạm vi KMA. Gợi ý hỏi đúng mảng (tuyển sinh, quy chế, …).",
+          "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 450"
+        ],
+        "how_to_test": "Gửi lần lượt các lượt trong CÙNG một cửa sổ chat (không F5)."
+      }
+    },
+    {
+      "id": "L5-08",
+      "tier": "L5",
+      "title": "Hai mảng trong phiên",
+      "multi_turn": true,
+      "turns": [
+        {
+          "question": "Em cần biết điểm trúng tuyển CNTT 2024 và học phí tạm thu HK1 khi nhập học.",
+          "expected": {
+            "agents": [
+              "tuyen_sinh",
+              "bieu_mau"
+            ],
+            "min_agents": 2
+          },
+          "rubric": {}
+        },
+        {
+          "question": "Tóm lại em phải chuẩn bị bao nhiêu tiền mặt theo hướng dẫn nhập học?",
+          "expected": {
+            "agents": [
+              "bieu_mau"
+            ]
+          },
+          "rubric": {
+            "must_contain_any": [
+              "10.896",
+              "10896940"
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau",
+          "tuyen_sinh"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag",
+          "multi_agent",
+          "form_fill",
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma"
+      },
+      "rubric": {
+        "notes": ""
+      },
+      "tags": [
+        "memory",
+        "multi_topic"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": [
+          "Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).",
+          "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 10.896, 10896940"
+        ],
+        "how_to_test": "Gửi lần lượt các lượt trong CÙNG một cửa sổ chat (không F5)."
+      }
+    },
+    {
+      "id": "L6-01",
+      "tier": "L6",
+      "title": "Catalog BHYT ATTT",
+      "turns": [
+        {
+          "question": "Trong catalog biểu mẫu KMA, mẫu khai BHYT sinh viên ATTT và file hướng dẫn khai BHYT tên gì?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "form_procedure",
+        "agents_exact": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "24-Mau_khai_BHYT",
+          "25-Huong_dan_khai_BHYT"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "catalog"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 24-Mau_khai_BHYT, 25-Huong_dan_khai_BHYT",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L6-02",
+      "tier": "L6",
+      "title": "Điền đơn xác nhận SV",
+      "turns": [
+        {
+          "question": "Điền giúp tôi giấy xác nhận sinh viên."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "form_fill",
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma"
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "điền",
+          "mục",
+          "họ tên",
+          "xác nhận"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "form_fill"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** điền, mục, họ tên, xác nhận",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L6-03",
+      "tier": "L6",
+      "title": "Tải đơn bảo lưu",
+      "turns": [
+        {
+          "question": "Tôi muốn tải đơn bảo lưu kết quả học tập — cho tên file trong catalog KMA."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "10-Don_bao_luu",
+          "bảo lưu"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "catalog"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 10-Don_bao_luu, bảo lưu",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L6-04",
+      "tier": "L6",
+      "title": "Điểm chuẩn — routing negative",
+      "turns": [
+        {
+          "question": "Điểm chuẩn ngành DTVT năm 2024 của KMA?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "single_domain",
+        "agents_exact": true,
+        "not_agents": [
+          "diem_thi"
+        ]
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "24.5",
+          "24,5",
+          "25.0",
+          "25.35",
+          "DTVT"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "routing",
+        "tuyen_sinh"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 24.5, 24,5, 25.0, 25.35, DTVT",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-15",
+      "tier": "L1",
+      "title": "SĐT tuyển sinh",
+      "turns": [
+        {
+          "question": "Số điện thoại liên hệ tuyển sinh KMA trong đề án 2025?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "qc_max": 0.55
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [
+          "0986622772"
+        ],
+        "source_file_any": [
+          "01_de_an_tuyen_sinh_2025.pdf"
+        ]
+      },
+      "tags": [
+        "tuyen_sinh"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có:** 0986622772\n**Tài liệu tham chiếu:** 01_de_an_tuyen_sinh_2025.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-16",
+      "tier": "L1",
+      "title": "Phương thức TS 2025",
+      "turns": [
+        {
+          "question": "Phương thức tuyển sinh đại học chính quy KMA năm 2025 là gì?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "qc_max": 0.55
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "xét tuyển",
+          "THPT"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "01_de_an_tuyen_sinh_2025.pdf"
+        ]
+      },
+      "tags": [
+        "tuyen_sinh"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** xét tuyển, THPT\n**Tài liệu tham chiếu:** 01_de_an_tuyen_sinh_2025.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-17",
+      "tier": "L2",
+      "title": "Điểm trúng tuyển CNTT 2024",
+      "turns": [
+        {
+          "question": "Điểm trúng tuyển ngành Công nghệ thông tin (Hà Nội) năm 2024 theo đề án KMA?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "not_agents": [
+          "diem_thi"
+        ],
+        "qc_min": 0.35
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [
+          "26.20"
+        ],
+        "source_file_any": []
+      },
+      "tags": [
+        "tuyen_sinh"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có:** 26.20",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-18",
+      "tier": "L2",
+      "title": "KTX nhập học",
+      "turns": [
+        {
+          "question": "Học viện có ký túc xá cho sinh viên hệ đóng học phí khi nhập học không?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag",
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "không có",
+          "Ký túc xá"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "Thu_tuc_nhap_hoc_2024.pdf"
+        ]
+      },
+      "tags": [
+        "bieu_mau"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** không có, Ký túc xá\n**Tài liệu tham chiếu:** Thu_tuc_nhap_hoc_2024.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L3-13",
+      "tier": "L3",
+      "title": "Điểm DTVT + phiếu ra trường",
+      "turns": [
+        {
+          "question": "Điểm trúng tuyển ngành Điện tử viễn thông 2025 và mẫu phiếu thanh toán ra trường cá nhân 2026 trong tài liệu KMA?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh",
+          "bieu_mau"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "10_trung_tuyen_dtvt_2025.pdf",
+          "13-Phieu_thanh_toan"
+        ]
+      },
+      "tags": [
+        "multi_agent"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Tài liệu tham chiếu:** 10_trung_tuyen_dtvt_2025.pdf, 13-Phieu_thanh_toan",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L3-14",
+      "tier": "L3",
+      "title": "Ma trận kiểm thử + quy chế",
+      "turns": [
+        {
+          "question": "Môn Kiểm thử an toàn hệ thống thông tin thuộc ma trận nào? Quy chế đào tạo 2025 áp dụng cho cơ sở Hà Nội và TP.HCM không?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "ma_tran",
+          "khao_thi"
+        ],
+        "primary": "ma_tran",
+        "pipeline_any": [
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "20_ma_tran_kiem_thu_athttt.pdf"
+        ]
+      },
+      "tags": [
+        "multi_agent"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **ma_tran, khao_thi** (gợi ý, không cần đúng pipeline).\n**Tài liệu tham chiếu:** 20_ma_tran_kiem_thu_athttt.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L4-11",
+      "tier": "L4",
+      "title": "Ba mảng tân SV",
+      "turns": [
+        {
+          "question": "Tân sinh viên KMA: điểm chuẩn CNTT 2024, tổng tiền nhập học 2024, và mẫu đơn đăng ký học — trả lời từng phần theo tài liệu."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh",
+          "bieu_mau"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "multi_agent",
+          "hybrid_rag",
+          "agentic_rag",
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2,
+        "planner_used": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "26.20",
+          "26.60",
+          "10.896",
+          "04-Don"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "planner",
+        "multi_agent"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 26.20, 26.60, 10.896, 04-Don",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L4-12",
+      "tier": "L4",
+      "title": "Chuẩn NN đầy đủ",
+      "turns": [
+        {
+          "question": "Tổng hợp: TOEIC sau TA1, TA2, TA3, trước đồ án và điều kiện công nhận VSTEP theo quy định chuẩn ngoại ngữ KMA."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "khao_thi"
+        ],
+        "primary": "khao_thi",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag",
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "planner_used": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "300",
+          "350",
+          "450",
+          "VSTEP"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "planner",
+        "khao_thi"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 300, 350, 450, VSTEP",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L5-09",
+      "tier": "L5",
+      "title": "Điểm chuẩn follow-up",
+      "multi_turn": true,
+      "turns": [
+        {
+          "question": "Điểm chuẩn ngành CNTT năm 2024 của KMA?",
+          "expected": {
+            "agents": [
+              "tuyen_sinh"
+            ],
+            "agents_exact": true,
+            "not_agents": [
+              "diem_thi"
+            ]
+          },
+          "rubric": {}
+        },
+        {
+          "question": "Năm 2023 thì sao?",
+          "expected": {
+            "agents": [
+              "tuyen_sinh"
+            ],
+            "was_rewritten": true
+          },
+          "rubric": {
+            "must_contain_any": [
+              "25.5",
+              "25,5",
+              "2023"
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag",
+          "multi_agent",
+          "form_fill",
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma"
+      },
+      "rubric": {
+        "notes": ""
+      },
+      "tags": [
+        "memory",
+        "admission"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": [
+          "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).",
+          "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 25.5, 25,5, 2023"
+        ],
+        "how_to_test": "Gửi lần lượt các lượt trong CÙNG một cửa sổ chat (không F5)."
+      }
+    },
+    {
+      "id": "L5-10",
+      "tier": "L5",
+      "title": "MSSV + học kỳ follow-up",
+      "multi_turn": true,
+      "turns": [
+        {
+          "question": "CT060310 điểm học kỳ 2 năm 2024-2025 đợt 1",
+          "expected": {
+            "agents": [
+              "diem_thi"
+            ],
+            "pipeline_any": [
+              "grade_lookup",
+              "hybrid_rag",
+              "agentic_rag"
+            ],
+            "supervisor_intent": "grade_result"
+          },
+          "rubric": {}
+        },
+        {
+          "question": "Có môn nào không đạt không?",
+          "expected": {
+            "agents": [
+              "diem_thi"
+            ]
+          },
+          "rubric": {
+            "must_contain_any": [
+              "CT060310",
+              "Không đạt",
+              "không đạt",
+              "Đạt",
+              "đạt"
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "agents": [
+          "diem_thi"
+        ],
+        "primary": "diem_thi",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag",
+          "multi_agent",
+          "form_fill",
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma"
+      },
+      "rubric": {
+        "notes": ""
+      },
+      "tags": [
+        "memory",
+        "grade_lookup"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": [
+          "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).",
+          "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** CT060310, Không đạt, không đạt, Đạt, đạt"
+        ],
+        "how_to_test": "Gửi lần lượt các lượt trong CÙNG một cửa sổ chat (không F5)."
+      }
+    },
+    {
+      "id": "L0-07",
+      "tier": "L0",
+      "title": "Tạm biệt",
+      "turns": [
+        {
+          "question": "Tạm biệt nhé, hẹn gặp lại!"
+        }
+      ],
+      "expected": {
+        "agents": [],
+        "primary": "",
+        "pipeline_any": [
+          "guardrail"
+        ],
+        "in_scope": false,
+        "scope_category": "chitchat"
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "chitchat"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Chào hỏi / giới thiệu trợ lý KMA và các mảng hỗ trợ. Không tra cứu tài liệu.",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L0-08",
+      "tier": "L0",
+      "title": "Off-topic y tế",
+      "turns": [
+        {
+          "question": "Thuốc hạ sốt cho trẻ 5 tuổi uống liều bao nhiêu?"
+        }
+      ],
+      "expected": {
+        "agents": [],
+        "primary": "",
+        "pipeline_any": [
+          "guardrail"
+        ],
+        "in_scope": false,
+        "scope_category": "off_topic"
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "ngoài phạm vi",
+          "KMA"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "off_topic"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Từ chối nhẹ — câu ngoài phạm vi KMA. Gợi ý hỏi đúng mảng (tuyển sinh, quy chế, …).",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-17",
+      "tier": "L1",
+      "title": "Địa chỉ PHCM",
+      "turns": [
+        {
+          "question": "Địa chỉ Phân hiệu KMA tại TP.HCM theo đề án tuyển sinh 2025?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "single_domain",
+        "agents_exact": true,
+        "qc_max": 0.55
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "Cộng Hòa",
+          "Tân Bình",
+          "TP.HCM"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "01_de_an_tuyen_sinh_2025.pdf"
+        ]
+      },
+      "tags": [
+        "tuyen_sinh"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** Cộng Hòa, Tân Bình, TP.HCM\n**Tài liệu tham chiếu:** 01_de_an_tuyen_sinh_2025.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-18",
+      "tier": "L1",
+      "title": "Phân hiệu quy chế",
+      "turns": [
+        {
+          "question": "Quy chế đào tạo KMA 2025 có áp dụng cho Phân hiệu TP.HCM không?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "khao_thi"
+        ],
+        "primary": "khao_thi",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "qc_max": 0.55
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "Phân hiệu",
+          "Hồ Chí Minh",
+          "Hà Nội"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "25_quy_che_dao_tao_dai_hoc_2025.pdf"
+        ]
+      },
+      "tags": [
+        "khao_thi"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** Phân hiệu, Hồ Chí Minh, Hà Nội\n**Tài liệu tham chiếu:** 25_quy_che_dao_tao_dai_hoc_2025.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-19",
+      "tier": "L1",
+      "title": "Đơn cấp lại thẻ SV",
+      "turns": [
+        {
+          "question": "Sinh viên mất thẻ sinh viên cần đơn nào trong catalog KMA?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "form_procedure",
+        "agents_exact": true,
+        "qc_max": 0.55
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "06-Don_cap_lai_the",
+          "thẻ sinh viên"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "bieu_mau",
+        "catalog"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 06-Don_cap_lai_the, thẻ sinh viên",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L1-20",
+      "tier": "L1",
+      "title": "Ma trận ATHT",
+      "turns": [
+        {
+          "question": "Môn Kiểm thử an toàn hệ thống thông tin có trong ma trận đề thi KMA không?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "ma_tran"
+        ],
+        "primary": "ma_tran",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "not_agents": [
+          "khao_thi"
+        ],
+        "qc_max": 0.55
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "20_ma_tran_kiem_thu_athttt.pdf"
+        ]
+      },
+      "tags": [
+        "ma_tran"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).\n**Tài liệu tham chiếu:** 20_ma_tran_kiem_thu_athttt.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-19",
+      "tier": "L2",
+      "title": "Cú pháp chuyển khoản",
+      "turns": [
+        {
+          "question": "Cú pháp nộp kinh phí nhập học vào tài khoản MB theo hướng dẫn KMA 2024?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "qc_min": 0.4
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "0021145666888",
+          "Mã trúng tuyển"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "Thu_tuc_nhap_hoc_2024.pdf"
+        ]
+      },
+      "tags": [
+        "bieu_mau"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 0021145666888, Mã trúng tuyển\n**Tài liệu tham chiếu:** Thu_tuc_nhap_hoc_2024.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-20",
+      "tier": "L2",
+      "title": "Kết quả CT4",
+      "turns": [
+        {
+          "question": "Tài liệu kết quả tốt nghiệp CT4 năm 2024 của KMA dùng để tra cứu thông tin gì?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "diem_thi"
+        ],
+        "primary": "diem_thi",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "qc_min": 0.4
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "04_ket_qua_tot_nghiep_ct4_2024.pdf"
+        ]
+      },
+      "tags": [
+        "diem_thi"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).\n**Tài liệu tham chiếu:** 04_ket_qua_tot_nghiep_ct4_2024.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-21",
+      "tier": "L2",
+      "title": "Chỉ tiêu CNTT 2025",
+      "turns": [
+        {
+          "question": "Chỉ tiêu tuyển sinh ngành Công nghệ thông tin năm 2025 của KMA là bao nhiêu?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "not_agents": [
+          "diem_thi"
+        ],
+        "qc_min": 0.35
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "01_de_an_tuyen_sinh_2025.pdf"
+        ]
+      },
+      "tags": [
+        "tuyen_sinh"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Tài liệu tham chiếu:** 01_de_an_tuyen_sinh_2025.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L2-22",
+      "tier": "L2",
+      "title": "Miễn thi NN",
+      "turns": [
+        {
+          "question": "Sinh viên có thể được miễn thi chuẩn tiếng Anh đầu ra theo quy định KMA trong trường hợp nào?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "khao_thi"
+        ],
+        "primary": "khao_thi",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "qc_min": 0.4
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": [
+          "03_quy_dinh_chuan_ngoai_ngu_2025.pdf"
+        ]
+      },
+      "tags": [
+        "khao_thi"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).\n**Tài liệu tham chiếu:** 03_quy_dinh_chuan_ngoai_ngu_2025.pdf",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L3-15",
+      "tier": "L3",
+      "title": "Thi TN + đơn phúc khảo",
+      "turns": [
+        {
+          "question": "KMA có hướng dẫn thi tốt nghiệp online không? Và sinh viên phúc khảo bài thi dùng đơn nào trong catalog?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "khao_thi",
+          "bieu_mau"
+        ],
+        "primary": "khao_thi",
+        "pipeline_any": [
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "thi tốt nghiệp",
+          "phúc khảo",
+          "15-Don"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "multi_agent"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **khao_thi, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** thi tốt nghiệp, phúc khảo, 15-Don",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L3-16",
+      "tier": "L3",
+      "title": "Điểm chuẩn + quy chế tín chỉ",
+      "turns": [
+        {
+          "question": "Điểm trúng tuyển ngành An toàn thông tin Hà Nội năm 2024? Quy chế đào tạo 2025 quy định chương trình học theo đơn vị gì?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh",
+          "khao_thi"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "25.90",
+          "25.95",
+          "tín chỉ"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "multi_agent"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh, khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 25.90, 25.95, tín chỉ",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L3-17",
+      "tier": "L3",
+      "title": "Catalog thực tập + CDIO",
+      "turns": [
+        {
+          "question": "Tên file giấy giới thiệu thực tập trong catalog KMA? Chương trình CNTT được xây dựng theo hướng tiếp cận nào?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau",
+          "tuyen_sinh"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "18-Giay",
+          "CDIO"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "multi_agent"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau, tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 18-Giay, CDIO",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L4-13",
+      "tier": "L4",
+      "title": "Nhập học đầy đủ",
+      "turns": [
+        {
+          "question": "Tân sinh viên KMA 2024: tổng tiền nhập học, có ký túc xá không, cú pháp chuyển khoản MB và mẫu đăng ký tài khoản MBank — trả lời theo hướng dẫn nhập học."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag",
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "planner_used": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "10.896",
+          "MBank",
+          "26-Dang_ky",
+          "0021145666888"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "planner",
+        "bieu_mau"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 10.896, MBank, 26-Dang_ky, 0021145666888",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L4-14",
+      "tier": "L4",
+      "title": "So sánh 3 ngành TS",
+      "turns": [
+        {
+          "question": "So sánh điểm trúng tuyển năm 2024 của ngành CNTT, An toàn thông tin và Điện tử viễn thông (cơ sở Hà Nội) theo đề án tuyển sinh KMA."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "tuyen_sinh"
+        ],
+        "primary": "tuyen_sinh",
+        "pipeline_any": [
+          "hybrid_rag",
+          "agentic_rag",
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "agents_exact": true,
+        "planner_used": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "26.20",
+          "26.60",
+          "25.90",
+          "25.95",
+          "25.0",
+          "25.35"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "planner",
+        "compare",
+        "tuyen_sinh"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 26.20, 26.60, 25.90, 25.95, 25.0, 25.35",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L4-15",
+      "tier": "L4",
+      "title": "Điểm + đơn + ma trận",
+      "turns": [
+        {
+          "question": "Sinh viên AT200106 đạt tiếng Anh đầu vào 2024 chưa? Đơn xin hoãn thi tên file gì? Ma trận Tin học đại cương có bao nhiêu câu và thời gian thi?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "diem_thi",
+          "bieu_mau",
+          "ma_tran"
+        ],
+        "primary": "diem_thi",
+        "pipeline_any": [
+          "multi_agent",
+          "hybrid_rag",
+          "agentic_rag",
+          "multi_agent"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "multi_domain",
+        "min_agents": 2,
+        "planner_used": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "AT200106",
+          "14-Don",
+          "50",
+          "60"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "planner",
+        "multi_agent"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **diem_thi, bieu_mau, ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** AT200106, 14-Don, 50, 60",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L5-11",
+      "tier": "L5",
+      "title": "Follow-up khao_thi",
+      "multi_turn": true,
+      "turns": [
+        {
+          "question": "TOEIC tối thiểu sau Tiếng Anh 1 của KMA là bao nhiêu?",
+          "expected": {
+            "agents": [
+              "khao_thi"
+            ],
+            "agents_exact": true
+          },
+          "rubric": {}
+        },
+        {
+          "question": "Còn sau Tiếng Anh 2 thì sao?",
+          "expected": {
+            "agents": [
+              "khao_thi"
+            ],
+            "was_rewritten": true
+          },
+          "rubric": {
+            "must_contain_any": [
+              "350",
+              "3"
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "agents": [
+          "khao_thi"
+        ],
+        "primary": "khao_thi",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag",
+          "multi_agent",
+          "form_fill",
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma"
+      },
+      "rubric": {
+        "notes": ""
+      },
+      "tags": [
+        "memory",
+        "rewrite"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": [
+          "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).",
+          "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 350, 3"
+        ],
+        "how_to_test": "Gửi lần lượt các lượt trong CÙNG một cửa sổ chat (không F5)."
+      }
+    },
+    {
+      "id": "L5-12",
+      "tier": "L5",
+      "title": "Form → hủy",
+      "multi_turn": true,
+      "turns": [
+        {
+          "question": "Điền giúp tôi đơn xin nghỉ học dưới 7 ngày.",
+          "expected": {
+            "pipeline_any": [
+              "form_fill",
+              "native_rag",
+              "hybrid_rag"
+            ],
+            "agents": [
+              "bieu_mau"
+            ]
+          },
+          "rubric": {}
+        },
+        {
+          "question": "Thôi, hủy đi.",
+          "expected": {
+            "agents": [
+              "bieu_mau"
+            ]
+          },
+          "rubric": {
+            "must_contain_any": [
+              "hủy",
+              "dừng",
+              "thôi",
+              "bỏ"
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "form_fill",
+          "native_rag",
+          "hybrid_rag",
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma"
+      },
+      "rubric": {
+        "notes": ""
+      },
+      "tags": [
+        "form_fill",
+        "cancel"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": [
+          "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).",
+          "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** hủy, dừng, thôi, bỏ"
+        ],
+        "how_to_test": "Gửi lần lượt các lượt trong CÙNG một cửa sổ chat (không F5)."
+      }
+    },
+    {
+      "id": "L6-05",
+      "tier": "L6",
+      "title": "Đơn đăng ký học",
+      "turns": [
+        {
+          "question": "Trong catalog KMA, đơn đăng ký học tên file gì?"
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma",
+        "supervisor_intent": "form_procedure",
+        "agents_exact": true
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "04-Don_dang_ky_hoc"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "catalog"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 04-Don_dang_ky_hoc",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    },
+    {
+      "id": "L6-06",
+      "tier": "L6",
+      "title": "Điền đơn phúc khảo",
+      "turns": [
+        {
+          "question": "Điền giúp tôi đơn xin phúc khảo bài thi."
+        }
+      ],
+      "expected": {
+        "agents": [
+          "bieu_mau"
+        ],
+        "primary": "bieu_mau",
+        "pipeline_any": [
+          "form_fill",
+          "native_rag",
+          "hybrid_rag"
+        ],
+        "in_scope": true,
+        "scope_category": "kma"
+      },
+      "rubric": {
+        "must_contain_all": [],
+        "must_contain_any": [
+          "điền",
+          "phúc khảo",
+          "mục"
+        ],
+        "must_not_contain": [],
+        "gold_facts": [],
+        "source_file_any": []
+      },
+      "tags": [
+        "form_fill"
+      ],
+      "notes": "",
+      "scoring_mode": "content",
+      "demo": {
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** điền, phúc khảo, mục",
+        "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
+      }
+    }
+  ]
+}

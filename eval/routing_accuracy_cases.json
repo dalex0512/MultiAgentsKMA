@@ -1,0 +1,62 @@
+{
+  "version": "2.0",
+  "description": "Regression routing offline — Supervisor keyword/fallback + Qc (không cần API). Bổ sung cho benchmark v2.",
+  "cases": [
+    {
+      "id": "R-01",
+      "question": "Điểm chuẩn ngành CNTT năm 2024 là bao nhiêu?",
+      "expect_agents": ["tuyen_sinh"],
+      "expect_not_agents": ["diem_thi"],
+      "notes": "Điểm chuẩn → tuyển sinh, không diem_thi"
+    },
+    {
+      "id": "R-02",
+      "question": "CT060310 điểm học kỳ 2 năm 2024-2025 đợt 1",
+      "expect_agents": ["diem_thi"],
+      "expect_not_agents": ["tuyen_sinh"],
+      "notes": "MSSV → grade_result / diem_thi"
+    },
+    {
+      "id": "R-03",
+      "question": "Cho em mẫu đơn xin nghỉ học có bản Word không?",
+      "expect_agents": ["bieu_mau"],
+      "expect_not_agents": [],
+      "notes": "form_procedure"
+    },
+    {
+      "id": "R-04",
+      "question": "Ma trận đề thi môn Tin học đại cương gồm những phần nào?",
+      "expect_agents": ["ma_tran"],
+      "expect_not_agents": ["tuyen_sinh"],
+      "notes": ""
+    },
+    {
+      "id": "R-05",
+      "question": "Chuẩn đầu ra ngoại ngữ VSTEP của KMA là gì?",
+      "expect_agents": ["khao_thi"],
+      "expect_not_agents": ["diem_thi"],
+      "notes": ""
+    },
+    {
+      "id": "R-06",
+      "question": "Mã ngành đào tạo Công nghệ thông tin trong chương trình CTĐT chính quy KMA là gì?",
+      "expect_agents": ["tuyen_sinh"],
+      "expect_not_agents": ["diem_thi", "ma_tran"],
+      "notes": "CTĐT → tuyen_sinh (multi-domain chỉ kiểm qua benchmark L3 live)"
+    },
+    {
+      "id": "R-07",
+      "question": "Mã sinh viên AT200201 có đạt kiểm tra phân loại tiếng Anh đầu vào khóa A20C8D7 năm 2024 (lần 2) không?",
+      "expect_agents": ["diem_thi"],
+      "expect_not_agents": ["tuyen_sinh"],
+      "notes": "MSSV + TA đầu vào → diem_thi"
+    },
+    {
+      "id": "R-08",
+      "question": "Theo đề án tuyển sinh KMA 2025, phương thức tuyển sinh đại học chính quy là gì? Đồng thời theo hướng dẫn nhập học 2024, tổng số tiền phải nộp khi làm thủ tục là bao nhiêu?",
+      "expect_agents": ["tuyen_sinh", "bieu_mau"],
+      "expect_not_agents": [],
+      "notes": "multi_domain tuyển sinh + phí nhập học"
+    }
+  ]
+}

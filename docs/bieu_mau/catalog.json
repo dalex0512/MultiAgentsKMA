@@ -1,0 +1,152 @@
+{
+  "01-Giay_xac_nhan_sinh_vien.doc": {
+    "display_name": "Giấy xác nhận sinh viên",
+    "drive_id": "1WDem96-PMRU1Trr7o5IW6lXjrqYmZPzF",
+    "category": "xác nhận"
+  },
+  "02-Giay_xac_nhan_thuong_binh_mau41.docx": {
+    "display_name": "Giấy xác nhận con thương binh (Mẫu 41)",
+    "drive_id": "1aEfoEbG7vxbZ70m_nUkOUkq6UIVzpeKq",
+    "category": "xác nhận"
+  },
+  "03-Giay_xac_nhan_vay_von.doc": {
+    "display_name": "Giấy xác nhận vay vốn ngân hàng",
+    "drive_id": "1cQkLoGYgfLzE6i9PjfCw2LkLP0Ls-oQS",
+    "category": "xác nhận"
+  },
+  "04-Don_dang_ky_hoc.docx": {
+    "display_name": "Đơn đăng ký học",
+    "drive_id": "1G6kJcRsIlp7_RH6-mu4pjMV7FGpU7bCU",
+    "category": "đăng ký"
+  },
+  "05-Don_huy_hoc_phan.doc": {
+    "display_name": "Đơn huỷ học phần",
+    "drive_id": "1hY-w-BI6r7_zdqjUwlIqSAqKgPkLMltw",
+    "category": "đăng ký"
+  },
+  "06-Don_cap_lai_the_sv.docx": {
+    "display_name": "Đơn cấp lại thẻ sinh viên",
+    "drive_id": "15yuAN8jOqlIpdxsJqFnSMrHIdmv0yavC",
+    "category": "thẻ và giấy tờ"
+  },
+  "07-Don_giai_quyet_cong_viec.doc": {
+    "display_name": "Đơn giải quyết công việc (xin bảng điểm, mượn hồ sơ)",
+    "drive_id": "1k64srgglgMBRw46zxa9RoV6zuGJPkGMw",
+    "category": "học vụ"
+  },
+  "08-Don_nghi_hoc_duoi_7_ngay.doc": {
+    "display_name": "Đơn xin nghỉ học tạm thời (dưới 7 ngày)",
+    "drive_id": "13mUX4IEz7QPPi2lA3Iex0nVJ8iU6reRT",
+    "category": "nghỉ học"
+  },
+  "09-Don_nghi_hoc_tren_7_ngay.doc": {
+    "display_name": "Đơn xin nghỉ học tạm thời (trên 7 ngày)",
+    "drive_id": "1QAcJXyuDcNdh4tcHW0zCIj34sOulW8qV",
+    "category": "nghỉ học"
+  },
+  "10-Don_bao_luu_ket_qua.doc": {
+    "display_name": "Đơn bảo lưu kết quả học tập",
+    "drive_id": "1VzN94Pxb56aSpsxlPNaD1iMPnQO4j8Kd",
+    "category": "nghỉ học"
+  },
+  "11-Don_tiep_tuc_hoc.doc": {
+    "display_name": "Đơn xin tiếp tục học",
+    "drive_id": "1EZGC4Jn-r_G9NGGMJxWqxerbnlf24X-z",
+    "category": "nghỉ học"
+  },
+  "12-Don_thoi_hoc.doc": {
+    "display_name": "Đơn xin thôi học",
+    "drive_id": "1OPCVYQ8HjSYm55w6nnDrpglAzedVmKl4",
+    "category": "nghỉ học"
+  },
+  "13-2-Thanh_toan_ra_truong_tap_the.doc": {
+    "display_name": "Phiếu thanh toán ra trường (tập thể) 2026",
+    "drive_id": "11qsWGxy0gjRpi7Ysbboycqic0o-n37Z4",
+    "category": "ra trường"
+  },
+  "13-Phieu_thanh_toan_ra_truong_ca_nhan.doc": {
+    "display_name": "Phiếu thanh toán ra trường (cá nhân) 2026",
+    "drive_id": "1BS8bPSW3-kAB3t5m9dDJmLDX2d2qfMzO",
+    "category": "ra trường"
+  },
+  "14-Don_hoan_thi.doc": {
+    "display_name": "Đơn xin hoãn thi",
+    "drive_id": "1A8i5qceowIml4n4fgb2b1MsSx01ouGZX",
+    "category": "thi cử"
+  },
+  "15-Don_phuc_khao_bai_thi.doc": {
+    "display_name": "Đơn xin phúc khảo bài thi",
+    "drive_id": "1HQeLdMkg55vSVJzt0bdylQI2IT-fZ42v",
+    "category": "thi cử"
+  },
+  "16-Don_cap_lai_the_BHYT.docx": {
+    "display_name": "Đơn xin cấp lại thẻ BHYT",
+    "drive_id": "1vX-7VjZ4tLv3lvcZLdvWORX-z9f-B1XH",
+    "category": "bảo hiểm y tế"
+  },
+  "17-Don_dang_ky_do_an_lan2.docx": {
+    "display_name": "Đơn xin đăng ký đồ án lần 2",
+    "drive_id": "1Zf0fuzKuoEdCh8GGa6DMDokJc9_AKtxf",
+    "category": "đồ án"
+  },
+  "18-Giay_gioi_thieu_thuc_tap.docx": {
+    "display_name": "Giấy giới thiệu thực tập",
+    "drive_id": "1Wv5w3tz4jjJruZ7CxCZKjOw2lLR8Tv8C",
+    "category": "thực tập"
+  },
+  "19-Don_thanh_toan_bao_hiem_Mic.doc": {
+    "display_name": "Đơn xin thanh toán bảo hiểm Mic",
+    "drive_id": "1EmJzxagkv7y5Bsd2ZRGoPpEAnu_k6tln",
+    "category": "bảo hiểm"
+  },
+  "PHIEU_SV_2024.pdf": {
+    "display_name": "Phiếu sinh viên 2024",
+    "drive_id": "1F8HJzvYRjxl35fJSQE68KGZQqGptDXmb",
+    "category": "tân sinh viên"
+  },
+  "Thu_tuc_nhap_hoc_2024.pdf": {
+    "display_name": "Thủ tục nhập học 2024",
+    "drive_id": "1fTCnVLe3BnzhU_6LjNCh5SVrB_2L8eyP",
+    "category": "tân sinh viên"
+  },
+  "20-Giay_chung_nhan_suc_khoe.docx": {
+    "display_name": "Giấy chứng nhận sức khoẻ sinh viên",
+    "drive_id": "16E1GmGfrVlG7zdjqfb5m8eO74IsO9kdT",
+    "category": "sức khoẻ"
+  },
+  "21-Kham_SK_dien_tim.docx": {
+    "display_name": "Phiếu khám sức khoẻ điện tim",
+    "drive_id": "16E1GmGfrVlG7zdjqfb5m8eO74IsO9kdT",
+    "category": "sức khoẻ"
+  },
+  "22-Phieu_xet_nghiem_sv.docx": {
+    "display_name": "Phiếu xét nghiệm sinh viên",
+    "drive_id": "16E1GmGfrVlG7zdjqfb5m8eO74IsO9kdT",
+    "category": "sức khoẻ"
+  },
+  "23-Danh_muc_kham_suc_khoe.docx": {
+    "display_name": "Danh mục khám sức khoẻ sinh viên",
+    "drive_id": "16E1GmGfrVlG7zdjqfb5m8eO74IsO9kdT",
+    "category": "sức khoẻ"
+  },
+  "24-Mau_khai_BHYT_sv_ATTT.doc": {
+    "display_name": "Mẫu khai BHYT sinh viên ATTT",
+    "drive_id": "147FRvQHpKTfGoT4Pf11VTjBm-gpFELxf",
+    "category": "bảo hiểm y tế"
+  },
+  "25-Huong_dan_khai_BHYT.doc": {
+    "display_name": "Hướng dẫn khai BHYT sinh viên",
+    "drive_id": "147FRvQHpKTfGoT4Pf11VTjBm-gpFELxf",
+    "category": "bảo hiểm y tế"
+  },
+  "26-Dang_ky_TK_MBank.pdf": {
+    "display_name": "Đăng ký tài khoản MBank",
+    "drive_id": "12UCERBq1JWeBPRnSBrmj_xTrqKB04zE5",
+    "category": "tân sinh viên"
+  },
+  "27-HD_mo_TKTT_MBank.pdf": {
+    "display_name": "Hướng dẫn mở tài khoản thanh toán MBank",
+    "drive_id": "12UCERBq1JWeBPRnSBrmj_xTrqKB04zE5",
+    "category": "tân sinh viên"
+  }
+}

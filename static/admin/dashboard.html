@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản trị — Học viện KMA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/admin/admin.css">
+</head>
+<body class="admin-dash">
+  <header class="admin-dash-header">
+    <div>
+      <h1><i class="fas fa-gauge-high"></i> Quản trị</h1>
+      <div class="user-meta" id="user-meta">Đang tải...</div>
+    </div>
+    <div class="actions">
+      <a href="/"><i class="fas fa-external-link"></i> Cổng SV</a>
+      <button type="button" class="btn-logout" id="logout-btn">Đăng xuất</button>
+    </div>
+  </header>
+
+  <div id="config-banner" class="admin-config-banner" hidden></div>
+  <div id="toast" class="admin-toast" hidden></div>
+
+  <div class="admin-shell">
+    <nav class="admin-nav" aria-label="Menu quản trị">
+      <button type="button" class="admin-nav-item active" data-panel="overview"><i class="fas fa-heart-pulse"></i> Tổng quan</button>
+      <button type="button" class="admin-nav-item" data-panel="analytics"><i class="fas fa-chart-column"></i> Thống kê chat</button>
+      <button type="button" class="admin-nav-item" data-panel="documents"><i class="fas fa-file-arrow-up"></i> Tài liệu</button>
+      <button type="button" class="admin-nav-item" data-panel="news"><i class="fas fa-newspaper"></i> Tin mới</button>
+      <button type="button" class="admin-nav-item" data-panel="retrieve"><i class="fas fa-magnifying-glass"></i> Thử retrieve</button>
+      <button type="button" class="admin-nav-item" data-panel="ops"><i class="fas fa-sliders"></i> Vận hành</button>
+      <button type="button" class="admin-nav-item" data-panel="catalog"><i class="fas fa-list"></i> Catalog biểu mẫu</button>
+      <button type="button" class="admin-nav-item" data-panel="security"><i class="fas fa-shield-halved"></i> Bảo mật</button>
+      <button type="button" class="admin-nav-item" data-panel="benchmark"><i class="fas fa-chart-line"></i> Benchmark</button>
+    </nav>
+
+    <main class="admin-content">
+      <!-- Overview -->
+      <section id="panel-overview" class="admin-panel active">
+        <h2 class="admin-panel-title">Tổng quan hệ thống</h2>
+        <p class="admin-panel-desc">Trạng thái Postgres, Qdrant và cấu hình routing.</p>
+        <div id="health-grid" class="admin-stat-grid">Đang tải...</div>
+        <div id="routing-info" class="admin-meta-block"></div>
+      </section>
+
+      <!-- Analytics -->
+      <section id="panel-analytics" class="admin-panel">
+        <h2 class="admin-panel-title">Thống kê hội thoại</h2>
+        <p class="admin-panel-desc">Số câu hỏi qua <code>/chat</code> và <code>/chat/stream</code> (lưu Postgres).</p>
+        <div class="admin-toolbar">
+          <label>Khoảng ngày
+            <select id="analytics-days">
+              <option value="7" selected>7 ngày</option>
+              <option value="14">14 ngày</option>
+              <option value="30">30 ngày</option>
+            </select>
+          </label>
+          <button type="button" class="admin-btn-ghost" id="analytics-refresh"><i class="fas fa-rotate"></i> Làm mới</button>
+          <a class="admin-btn-ghost" href="/metrics" target="_blank" rel="noopener"><i class="fas fa-chart-area"></i> Prometheus /metrics</a>
+        </div>
+        <div id="analytics-summary" class="admin-stat-grid"></div>
+        <div id="analytics-bars" class="admin-chart-bars"></div>
+        <h3 class="admin-subhead">Câu hỏi gần đây</h3>
+        <div id="analytics-recent" class="admin-table-wrap"></div>
+      </section>
+
+      <!-- Documents -->
+      <section id="panel-documents" class="admin-panel">
+        <h2 class="admin-panel-title">Quản lý tài liệu</h2>
+        <p class="admin-panel-desc">Upload vào <code>docs/&lt;agent&gt;/</code>, ingest Qdrant. Ghi đè nếu trùng tên file.</p>
+
+        <form id="upload-form" class="admin-upload-form">
+          <div class="admin-form-row">
+            <label>Chuyên gia (agent)</label>
+            <select id="upload-agent" required></select>
+          </div>
+          <div class="admin-form-row">
+            <label>File (.pdf, .docx, .doc)</label>
+            <input type="file" id="upload-file" accept=".pdf,.docx,.doc" required>
+          </div>
+          <label class="admin-check">
+            <input type="checkbox" id="upload-overwrite"> Ghi đè nếu file đã tồn tại
+          </label>
+          <button type="submit" class="admin-btn admin-btn-primary admin-btn-inline" id="upload-btn">
+            <i class="fas fa-upload"></i> Upload &amp; ingest
+          </button>
+        </form>
+
+        <div class="admin-toolbar">
+          <label>Lọc agent
+            <select id="doc-filter-agent"><option value="">Tất cả</option></select>
+          </label>
+          <button type="button" class="admin-btn-ghost" id="docs-refresh"><i class="fas fa-rotate"></i> Làm mới</button>
+          <button type="button" class="admin-btn-ghost" id="reindex-agent-btn"><i class="fas fa-database"></i> Re-index agent đang chọn</button>
+        </div>
+        <div id="docs-table-wrap" class="admin-table-wrap"></div>
+      </section>
+
+      <!-- News -->
+      <section id="panel-news" class="admin-panel">
+        <h2 class="admin-panel-title">Tin mới trang chủ</h2>
+        <p class="admin-panel-desc">Upload PDF thông báo từ Phòng Đào tạo để hiển thị danh sách ở trang chủ.</p>
+
+        <form id="news-form" class="admin-upload-form">
+          <div class="admin-form-row">
+            <label>Tiêu đề tin</label>
+            <input type="text" id="news-title" maxlength="180" placeholder="Ví dụ: Lịch thi KTHP học kỳ 1 năm học 2024-2025 đợt 1" required>
+          </div>
+          <div class="admin-form-row">
+            <label>Mô tả ngắn</label>
+            <textarea id="news-summary" rows="2" maxlength="300" placeholder="Tóm tắt 1-2 dòng để sinh viên dễ nhận biết" required></textarea>
+          </div>
+          <div class="admin-form-row">
+            <label>File PDF</label>
+            <input type="file" id="news-file" accept=".pdf,application/pdf" required>
+          </div>
+          <label class="admin-check">
+            <input type="checkbox" id="news-overwrite"> Ghi đè nếu file đã tồn tại
+          </label>
+          <button type="submit" class="admin-btn admin-btn-primary admin-btn-inline" id="news-upload-btn">
+            <i class="fas fa-upload"></i> Đăng tin
+          </button>
+        </form>
+
+        <div class="admin-toolbar">
+          <button type="button" class="admin-btn-ghost" id="news-refresh"><i class="fas fa-rotate"></i> Làm mới</button>
+        </div>
+        <div id="news-table-wrap" class="admin-table-wrap"></div>
+      </section>
+
+      <!-- Retrieve test -->
+      <section id="panel-retrieve" class="admin-panel">
+        <h2 class="admin-panel-title">Thử retrieve</h2>
+        <p class="admin-panel-desc">Kiểm tra chunk Qdrant theo agent trước khi phát hành tài liệu.</p>
+        <form id="retrieve-form" class="admin-upload-form">
+          <div class="admin-form-row">
+            <label>Agent</label>
+            <select id="retrieve-agent" required></select>
+          </div>
+          <div class="admin-form-row">
+            <label>Câu hỏi mẫu</label>
+            <textarea id="retrieve-query" rows="3" placeholder="VD: Điểm chuẩn CNTT năm 2024?" required></textarea>
+          </div>
+          <button type="submit" class="admin-btn admin-btn-primary admin-btn-inline">Chạy retrieve</button>
+        </form>
+        <div id="retrieve-results" class="admin-results"></div>
+      </section>
+
+      <!-- Ops -->
+      <section id="panel-ops" class="admin-panel">
+        <h2 class="admin-panel-title">Vận hành</h2>
+        <form id="ops-form" class="admin-upload-form">
+          <div class="admin-form-row">
+            <label>Thông báo bảo trì (cổng SV)</label>
+            <textarea id="maintenance-msg" rows="2" maxlength="500" placeholder="Để trống = không hiển thị"></textarea>
+          </div>
+          <fieldset class="admin-fieldset">
+            <legend>Tạm tắt agent (Supervisor sẽ bỏ qua)</legend>
+            <div id="disabled-agents-checks" class="admin-check-grid"></div>
+          </fieldset>
+          <button type="submit" class="admin-btn admin-btn-primary admin-btn-inline">Lưu cài đặt</button>
+        </form>
+      </section>
+
+      <!-- Catalog -->
+      <section id="panel-catalog" class="admin-panel">
+        <h2 class="admin-panel-title">Catalog biểu mẫu</h2>
+        <p class="admin-panel-desc">Chỉnh tên hiển thị / loại trong <code>docs/bieu_mau/catalog.json</code>.</p>
+        <div id="catalog-editor" class="admin-table-wrap"></div>
+      </section>
+
+      <!-- Security -->
+      <section id="panel-security" class="admin-panel">
+        <h2 class="admin-panel-title">Bảo mật</h2>
+        <form id="password-form" class="admin-upload-form admin-upload-form--narrow">
+          <h3>Đổi mật khẩu</h3>
+          <div class="admin-form-row">
+            <label>Mật khẩu hiện tại</label>
+            <input type="password" id="pw-old" autocomplete="current-password" required>
+          </div>
+          <div class="admin-form-row">
+            <label>Mật khẩu mới (≥ 8 ký tự)</label>
+            <input type="password" id="pw-new" autocomplete="new-password" required minlength="8">
+          </div>
+          <button type="submit" class="admin-btn admin-btn-primary admin-btn-inline">Đổi mật khẩu</button>
+        </form>
+        <div class="admin-toolbar" style="margin-top:12px">
+          <button type="button" class="admin-btn-danger" id="revoke-sessions-btn">
+            <i class="fas fa-right-from-bracket"></i> Thu hồi mọi phiên đăng nhập (JWT)
+          </button>
+        </div>
+        <h3 class="admin-subhead">Nhật ký đăng nhập & thao tác</h3>
+        <div id="audit-log-wrap" class="admin-table-wrap"></div>
+      </section>
+
+      <!-- Benchmark -->
+      <section id="panel-benchmark" class="admin-panel">
+        <h2 class="admin-panel-title">Benchmark</h2>
+        <p class="admin-panel-desc">Chạy tối đa vài case (nền, có thể mất vài phút).</p>
+        <form id="bench-form" class="admin-upload-form admin-upload-form--row">
+          <div class="admin-form-row">
+            <label>Tier</label>
+            <select id="bench-tier">
+              <option value="">Tất cả (giới hạn)</option>
+              <option value="L0">L0</option>
+              <option value="L1">L1</option>
+            </select>
+          </div>
+          <div class="admin-form-row">
+            <label>Số case</label>
+            <input type="number" id="bench-limit" min="1" max="10" value="3">
+          </div>
+          <button type="submit" class="admin-btn admin-btn-primary admin-btn-inline">Bắt đầu</button>
+        </form>
+        <div id="bench-job" class="admin-meta-block"></div>
+        <h3 class="admin-subhead">Lịch sử chạy</h3>
+        <div id="bench-runs" class="admin-table-wrap"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/admin/admin-auth.js"></script>
+  <script src="/static/admin/admin-dashboard.js"></script>
+</body>
+</html>
