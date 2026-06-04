@@ -32,7 +32,7 @@ log = logging.getLogger(__name__)
 
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
-_MSSV_RE = re.compile(r"\b(?:AT|CT)\d{6}\b", re.IGNORECASE)
+_MSSV_RE = re.compile(r"\b(?:AT|CT|DT)\d{6}\b", re.IGNORECASE)
 _SBD_RE = re.compile(r"(?:\bsbd\b|số báo danh|so bao danh)\s*[:#]?\s*(\d{1,5})", re.IGNORECASE)
 
 # Điểm chuẩn / tuyển sinh — không fast-path sang diem_thi
@@ -96,8 +96,48 @@ _DANH_SACH_THI_MARKERS = (
     "buoi chieu",
     "số báo danh",
     "so bao danh",
+    " sbd ",
     "danh sách dự thi",
     "danh sach du thi",
+    "cấm thi",
+    "cam thi",
+    "nợ hp",
+    "no hp",
+)
+
+# Markers bổ sung khi có MSSV — câu hỏi về ngày/giờ/địa điểm/môn thi cá nhân
+_MSSV_DATE_MARKERS = (
+    "thi ngày nào",
+    "thi khi nào",
+    "thi lúc nào",
+    "ngày thi",
+    "ngay thi",
+    "thi lại",
+    "thi lai",
+    "bao giờ thi",
+    "mấy giờ thi",
+    "phòng nào",
+    "phong nao",
+    "thi ở đâu",
+    "thi o dau",
+    "ở phòng",
+    "o phong",
+    # Hỏi môn thi cá nhân
+    "thi môn",
+    "thi mon",
+    "môn thi gì",
+    "mon thi gi",
+    # Hỏi trạng thái có được thi không
+    "có thi",
+    "co thi",
+    "được thi",
+    "duoc thi",
+    "trong danh sách",
+    "trong danh sach",
+    # Hỏi hình thức thi
+    "hình thức thi",
+    "hinh thuc thi",
+    "thi hình thức",
 )
 
 _LICH_THI_MARKERS = (
@@ -120,8 +160,14 @@ _LICH_THI_MARKERS = (
     "kì 2",
     "ki 1",
     "ki 2",
+    "kỳ 1",   # biến thể ỳ
+    "kỳ 2",   # biến thể ỳ
     "hk1",
     "hk2",
+    "đợt 1",  # có space
+    "đợt 2",  # có space
+    "dot 1",
+    "dot 2",
     "đợt1",
     "đợt2",
     "dot1",
@@ -149,6 +195,15 @@ _GRADE_CONTEXT_MARKERS = (
     "điểm", "diem", "bảng điểm", "bang diem", "kết quả", "ket qua",
     "học kỳ", "hoc ky", "đạt", "dat", "không đạt", "khong dat",
     "phân loại", "phan loai", "tiếng anh", "tieng anh", "chứng chỉ", "chung chi",
+)
+
+# Quy chế / chuẩn ngoại ngữ — dùng phát hiện câu đa mảng MSSV + TOEIC
+_POLICY_MARKERS = (
+    "toeic", "vstep", "chuẩn ngoại ngữ", "chuan ngoai ngu",
+    "chuẩn đầu ra", "chuan dau ra", "quy chế", "quy che",
+    "đồ án", "do an", "de tai do an", "đề tài đồ án", "de tai do an",
+    "trước khi nhận đề tài", "truoc khi nhan de tai",
+    "trước đồ án", "truoc do an",
 )
 
 _SCHEDULE_SUBJECT_MARKERS = (
@@ -179,7 +234,8 @@ Nhiệm vụ: phân loại ý định sinh viên và chọn agent chuyên môn (
 
 ## Quy tắc chọn agent
 - form_procedure → agents phải có "bieu_mau" (primary thường là bieu_mau).
-- grade_result / tra điểm theo MSSV (ATxxxxxx, CTxxxxxx) → chỉ "diem_thi" (không gọi khao_thi trừ khi hỏi rõ quy chế/thang điểm chung).
+- grade_result / tra điểm theo MSSV (ATxxxxxx, CTxxxxxx) → chỉ "diem_thi" khi KHÔNG kèm TOEIC/quy chế/chuẩn ngoại ngữ trong cùng câu.
+- Câu gộp MSSV/kết quả TA + TOEIC/chuẩn ngoại ngữ/đồ án → intent multi_domain, agents ["diem_thi","khao_thi"] (primary theo phần hỏi trước).
 - Tuyển sinh, CTĐT, đề án, điểm chuẩn, ngưỡng trúng tuyển → "tuyen_sinh" (KHÔNG dùng diem_thi cho điểm chuẩn).
 - Quy chế, chuẩn đầu ra, thi tốt nghiệp, TOEIC/VSTEP → "khao_thi".
 - Ma trận đề, cấu trúc đề thi, môn thi → "ma_tran".
@@ -194,6 +250,12 @@ Q: "Điểm chuẩn CNTT 2024 và mẫu đơn nhập học?"
 
 Q: "Sinh viên AT200201 đạt TA đầu vào chưa?"
 → intent grade_result, agents ["diem_thi"], primary "diem_thi"
+
+Q: "Chuẩn TOEIC trước đồ án là bao nhiêu? AT200106 có đạt TA đầu vào A20C8D7 2024 lần 2 không?"
+→ intent multi_domain, agents ["khao_thi","diem_thi"], primary "khao_thi"
+
+Q: "AT200401 và AT200201 trong phân loại TA A20C8D7 2024 lần 2, đồng thời TOEIC tối thiểu trước đồ án?"
+→ intent multi_domain, agents ["diem_thi","khao_thi"], primary "diem_thi"
 
 Q: "CT060310 điểm học kỳ 2 2024-2025 đợt 1"
 → intent grade_result, agents ["diem_thi"], primary "diem_thi" (CT060310 là MSSV, không phải mã học phần)
@@ -288,9 +350,13 @@ def _apply_domain_keyword_rules(question: str, scores: dict[str, int]) -> None:
     if _MSSV_RE.search(question):
         if "diem_thi" in scores:
             scores["diem_thi"] += 8
-        for aid in ("tuyen_sinh", "khao_thi"):
-            if aid in scores:
-                scores[aid] = max(0, scores[aid] - 2)
+        has_policy = any(m in low for m in _POLICY_MARKERS)
+        if has_policy and "khao_thi" in scores:
+            scores["khao_thi"] += 6
+        elif not has_policy:
+            for aid in ("tuyen_sinh", "khao_thi"):
+                if aid in scores:
+                    scores[aid] = max(0, scores[aid] - 2)
 
     if any(m in low for m in _FORM_STRONG_MARKERS):
         if "bieu_mau" in scores:
@@ -345,6 +411,18 @@ def _keyword_fallback(question: str) -> RoutingDecision:
     agents, primary = _ensure_fee_agent(question, agents, primary)
 
     low = _normalize_q(question)
+    if _is_grade_policy_compound(question):
+        agents = filter_enabled_agents(["diem_thi", "khao_thi"]) or ["diem_thi", "khao_thi"]
+        primary = _grade_policy_compound_primary(question)
+        if primary not in agents:
+            primary = agents[0]
+        return RoutingDecision(
+            agents=agents,
+            primary=primary,
+            reason="Keyword fallback: MSSV/kết quả TA + TOEIC/quy chế.",
+            intent=SUP_INTENT_MULTI,
+            confidence=0.85,
+        )
     if _MSSV_RE.search(question):
         intent = SUP_INTENT_GRADE
     elif any(m in low for m in _FORM_STRONG_MARKERS[:4]):
@@ -374,6 +452,10 @@ def _keyword_confident(question: str) -> RoutingDecision | None:
     low = _normalize_q(question)
 
     if _MSSV_RE.search(question) and not any(m in low for m in ("điểm chuẩn", "diem chuan")):
+        compound = _grade_policy_compound_route(question)
+        if compound is not None:
+            log.info(f"[supervisor:fast] compound grade+policy agents={compound.agents}")
+            return compound
         dec = RoutingDecision(
             agents=filter_enabled_agents(["diem_thi"]) or ["diem_thi"],
             primary="diem_thi",
@@ -445,21 +527,31 @@ def _schedule_subject_list_route(question: str) -> RoutingDecision | None:
             "mon nao",
             "thi những môn",
             "thi nhung mon",
+            # Bổ sung: "thi môn gì", "có môn gì", "bao gồm môn"
+            "thi môn gì",
+            "thi mon gi",
+            "có môn gì",
+            "co mon gi",
+            "bao gồm môn",
+            "bao gom mon",
+            "gồm môn",
+            "gom mon",
         )
     )
     mon_thi_q = ("môn thi" in low or "mon thi" in low) and any(
-        m in low for m in ("là gì", "la gi", "nào", "nao", "gồm", "gom", "những", "cac", "các")
+        m in low for m in ("là gì", "la gi", "nào", "nao", "gồm", "gom", "những", "cac", "các", "gì", "gi ")
     )
     mon_nao_q = ("môn nào" in low or "mon nao" in low) and any(
         m in low for m in ("thi", "kthp", "đợt", "dot", "học kỳ", "hoc ky", "kì", "ki ")
     )
     if not list_q and not mon_thi_q and not mon_nao_q:
         return None
+    # period_ok: dùng regex để nhận mọi năm 20xx thay vì hardcode 2023/2024
     period_ok = any(
         m in low
         for m in _LICH_THI_MARKERS
-        + ("học kỳ", "hoc ky", "học kì", "hoc ki", "đợt", "dot", "kì 1", "ki 1", "2023", "2024")
-    )
+        + ("học kỳ", "hoc ky", "học kì", "hoc ki", "đợt", "dot", "kì 1", "ki 1", "kỳ 1", "kỳ 2")
+    ) or bool(re.search(r"\b20\d{2}\b", low))
     if not period_ok:
         return None
     agents = filter_enabled_agents(["lich_thi"]) or ["lich_thi"]
@@ -475,11 +567,14 @@ def _schedule_subject_list_route(question: str) -> RoutingDecision | None:
 
 
 def _mssv_exam_list_route(question: str) -> RoutingDecision | None:
-    """MSSV + danh sách/phòng/ca thi → danh_sach_thi (không tra điểm)."""
+    """MSSV + danh sách/phòng/ca thi → danh_sach_thi (không tra điểm).
+    Nhận diện thêm: 'thi ngày nào', 'cấm thi', 'thi lại' khi có MSSV."""
     if not _MSSV_RE.search(question):
         return None
     low = _normalize_q(question)
-    if not any(m in low for m in _DANH_SACH_THI_MARKERS):
+    has_exam_list_marker = any(m in low for m in _DANH_SACH_THI_MARKERS)
+    has_date_marker = any(m in low for m in _MSSV_DATE_MARKERS)
+    if not has_exam_list_marker and not has_date_marker:
         return None
     if any(m in low for m in _GRADE_CONTEXT_MARKERS):
         return None
@@ -496,29 +591,90 @@ def _mssv_exam_list_route(question: str) -> RoutingDecision | None:
 
 
 def _sbd_exam_list_route(question: str) -> RoutingDecision | None:
-    """SBD + ngữ cảnh danh sách/ca/phòng thi => danh_sach_thi."""
+    """SBD + ngữ cảnh danh sách/ca/phòng thi => danh_sach_thi.
+    Relax: nếu SBD tường minh + không có ngữ cảnh điểm → route trực tiếp."""
     if not _SBD_RE.search(question):
         return None
     low = _normalize_q(question)
-    if not any(m in low for m in _DANH_SACH_THI_MARKERS):
-        return None
     if any(m in low for m in _GRADE_CONTEXT_MARKERS):
         return None
+    # Nếu có marker danh sách thi rõ ràng → route
+    if any(m in low for m in _DANH_SACH_THI_MARKERS):
+        agents = filter_enabled_agents(["danh_sach_thi"]) or ["danh_sach_thi"]
+        dec = RoutingDecision(
+            agents=agents,
+            primary=agents[0],
+            reason="SBD + danh sách/phòng/ca thi — agent danh_sach_thi.",
+            intent="single_domain",
+            confidence=0.93,
+        )
+        log.info(f"[supervisor:exam_list_sbd] agents={dec.agents} primary={dec.primary}")
+        return dec
+    # SBD tường minh + không có context điểm → vẫn route (SBD chỉ có nghĩa trong danh sách thi)
     agents = filter_enabled_agents(["danh_sach_thi"]) or ["danh_sach_thi"]
     dec = RoutingDecision(
         agents=agents,
         primary=agents[0],
-        reason="SBD + danh sách/phòng/ca thi — agent danh_sach_thi.",
+        reason="SBD tường minh — agent danh_sach_thi (không cần marker bổ sung).",
         intent="single_domain",
+        confidence=0.90,
+    )
+    log.info(f"[supervisor:exam_list_sbd_bare] agents={dec.agents} primary={dec.primary}")
+    return dec
+
+
+def _is_grade_policy_compound(question: str) -> bool:
+    """MSSV + tra kết quả/TA + quy chế/TOEIC trong cùng câu."""
+    if not _MSSV_RE.search(question):
+        return False
+    low = _normalize_q(question)
+    has_grade = any(m in low for m in _GRADE_CONTEXT_MARKERS)
+    has_policy = any(m in low for m in _POLICY_MARKERS)
+    return has_grade and has_policy
+
+
+def _grade_policy_compound_primary(question: str) -> str:
+    """Primary agent: phần TOEIC/quy chế hỏi trước → khao_thi, ngược lại diem_thi."""
+    low = _normalize_q(question)
+    policy_pos = min(
+        (low.find(m) for m in _POLICY_MARKERS if m in low),
+        default=len(low),
+    )
+    mssv_m = _MSSV_RE.search(question)
+    grade_markers = _GRADE_CONTEXT_MARKERS + ("at", "ct", "dt")
+    grade_pos = min(
+        (low.find(m) for m in grade_markers if m in low),
+        default=len(low),
+    )
+    if mssv_m:
+        grade_pos = min(grade_pos, low.find(mssv_m.group(0).lower()))
+    return "khao_thi" if policy_pos < grade_pos else "diem_thi"
+
+
+def _grade_policy_compound_route(question: str) -> RoutingDecision | None:
+    """MSSV + kết quả TA/điểm + TOEIC/quy chế → diem_thi + khao_thi."""
+    if not _is_grade_policy_compound(question):
+        return None
+    agents = filter_enabled_agents(["diem_thi", "khao_thi"]) or ["diem_thi", "khao_thi"]
+    primary = _grade_policy_compound_primary(question)
+    if primary not in agents:
+        primary = agents[0]
+    dec = RoutingDecision(
+        agents=agents,
+        primary=primary,
+        reason="MSSV/kết quả TA + TOEIC/quy chế — agents diem_thi và khao_thi.",
+        intent=SUP_INTENT_MULTI,
         confidence=0.93,
     )
-    log.info(f"[supervisor:exam_list_sbd] agents={dec.agents} primary={dec.primary}")
+    log.info(f"[supervisor:grade_policy] agents={dec.agents} primary={dec.primary}")
     return dec
 
 
 def _mssv_grade_route(question: str) -> RoutingDecision | None:
     """MSSV + ngữ cảnh tra cứu → diem_thi (luôn bật, không phụ thuộc SUPERVISOR_FAST_PATH)."""
     if not _MSSV_RE.search(question):
+        return None
+    if _is_grade_policy_compound(question):
         return None
     low = _normalize_q(question)
     if any(m in low for m in ("điểm chuẩn", "diem chuan", "ngưỡng tuyển", "nguong tuyen", "chỉ tiêu", "chi tieu")):
@@ -546,11 +702,17 @@ def _subject_schedule_route(question: str) -> RoutingDecision | None:
     if _MSSV_RE.search(question):
         return None
     low = _normalize_q(question)
+    # Loại trừ câu hỏi thủ tục / quy trình — không phải tra cứu lịch
     if any(
         m in low
         for m in (
             "ma trận", "ma tran", "cấu trúc đề", "cau truc de",
             "bao nhiêu câu", "bao nhieu cau", "bao nhiêu phút", "bao nhieu phut",
+            # Câu hỏi về quy trình, thủ tục đăng ký thi lại → không phải lịch thi
+            "đăng ký", "dang ky", "thủ tục", "thu tuc",
+            "như thế nào", "nhu the nao", "làm thế nào", "lam the nao",
+            "hướng dẫn", "huong dan", "quy trình", "quy trinh",
+            "điều kiện", "dieu kien", "tiêu chí", "tieu chi",
         )
     ):
         return None
@@ -558,7 +720,9 @@ def _subject_schedule_route(question: str) -> RoutingDecision | None:
     has_period = any(
         m in low
         for m in (
-            "học kỳ", "hoc ky", "học kì", "hoc ki", "kì ", "ki ", "hk1", "hk2",
+            "học kỳ", "hoc ky", "học kì", "hoc ki",
+            "kì ", "ki ", "kỳ ",  # thêm "kỳ " (ỳ diacritic)
+            "hk1", "hk2",
             "đợt", "dot", "dot1", "dot2", "đợt1", "đợt2", "kthp",
         )
     )
@@ -567,6 +731,11 @@ def _subject_schedule_route(question: str) -> RoutingDecision | None:
         for m in (
             "thời gian", "thoi gian", "giờ", "gio", "ngày", "ngay",
             "bắt đầu", "bat dau", "khi nào", "khi nao",
+            # Thêm: "thi ngày nào", "thi khi nào", "thi lúc nào"
+            "thi ngày nào", "thi ngay nao",
+            "thi khi nào", "thi khi nao",
+            "thi lúc nào", "thi luc nao",
+            "thi vào ngày", "thi vao ngay",
         )
     )
     has_schedule_intent = any(m in low for m in _SCHEDULE_SUBJECT_MARKERS)
@@ -590,7 +759,11 @@ def _multi_domain_heuristic(question: str) -> RoutingDecision | None:
     has_admission = any(m in low for m in _ADMISSION_MARKERS)
     has_fee = any(m in low for m in _FEE_MARKERS)
     has_form = any(m in low for m in _FORM_STRONG_MARKERS)
-    has_exam = any(m in low for m in ("quy chế", "quy che", "chuẩn đầu ra", "chuẩn ngoại ngữ", "toeic", "vstep"))
+    has_exam = any(m in low for m in _POLICY_MARKERS)
+    has_grade_mssv = (
+        _MSSV_RE.search(question)
+        and any(m in low for m in _GRADE_CONTEXT_MARKERS)
+    )
 
     agent_ids: list[str] = []
     if has_admission:
@@ -599,9 +772,24 @@ def _multi_domain_heuristic(question: str) -> RoutingDecision | None:
         agent_ids.append("bieu_mau")
     if has_exam and "khao_thi" not in agent_ids:
         agent_ids.append("khao_thi")
+    if has_grade_mssv and "diem_thi" not in agent_ids:
+        agent_ids.append("diem_thi")
 
     if len(agent_ids) < 2:
         return None
+
+    if has_grade_mssv and has_exam:
+        primary = _grade_policy_compound_primary(question)
+        agents = filter_enabled_agents(agent_ids) or agent_ids[:2]
+        if primary not in agents:
+            primary = agents[0]
+        return RoutingDecision(
+            agents=agents[:3],
+            primary=primary,
+            reason="Heuristic multi-domain: MSSV/kết quả TA + quy chế/TOEIC.",
+            intent=SUP_INTENT_MULTI,
+            confidence=0.90,
+        )
 
     agents = filter_enabled_agents(agent_ids) or agent_ids[:2]
     primary = "tuyen_sinh" if "tuyen_sinh" in agents else agents[0]
@@ -676,6 +864,10 @@ def _route_impl(
     schedule_list_dec = _schedule_subject_list_route(question)
     if schedule_list_dec is not None:
         return schedule_list_dec
+
+    compound_dec = _grade_policy_compound_route(question)
+    if compound_dec is not None:
+        return compound_dec
 
     mssv_dec = _mssv_grade_route(question)
     if mssv_dec is not None:

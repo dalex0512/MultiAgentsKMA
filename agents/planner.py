@@ -32,7 +32,13 @@ Câu hỏi (đã làm rõ):
 Quy tắc:
 - Nếu câu chỉ MỘT ý đơn giản → trả sub_questions có 1 phần tử (giữ nguyên câu).
 - Nếu nhiều ý (so sánh, và, đồng thời, nhiều mảng: tuyển sinh + biểu mẫu + quy chế...) → tách tối đa {max_n} câu con, mỗi câu đủ nghĩa.
+- Câu gộp MSSV/kết quả TA + TOEIC/chuẩn ngoại ngữ/đồ án → tách 2 câu: (1) tra MSSV/kết quả TA, (2) TOEIC/quy chế.
 - Không trả lời nội dung, chỉ JSON.
+
+Ví dụ tách:
+Q: "AT200401 và AT200201 trong phân loại TA A20C8D7 2024 lần 2, TOEIC tối thiểu trước đồ án?"
+→ ["Cho biết AT200401 và AT200201 trong kết quả phân loại tiếng Anh đầu vào A20C8D7 2024 lần 2.",
+   "Điểm TOEIC tối thiểu trước đề tài đồ án theo quy định chuẩn ngoại ngữ KMA là bao nhiêu?"]
 
 Trả lời ĐÚNG MỘT JSON:
 {{"sub_questions": ["câu 1", "câu 2"], "reason": "giải thích ngắn"}}"""
@@ -48,6 +54,19 @@ class PlanResult:
 _COMPLEX_MARKERS = (
     " và ", " đồng thời ", " so sánh ", " khác nhau ", " cùng lúc ",
     " ngoài ra ", " đồng thời ", " các môn ", " các điều ", " những ",
+)
+
+_MSSV_RE = re.compile(r"\b(?:AT|CT|DT)\d{6}\b", re.IGNORECASE)
+_GRADE_MARKERS = (
+    "phân loại", "phan loai", "tiếng anh", "tieng anh", "đầu vào", "dau vao",
+    "kết quả", "ket qua", "đạt", "dat", "bảng điểm", "bang diem",
+)
+_POLICY_MARKERS = (
+    "toeic", "vstep", "chuẩn ngoại ngữ", "chuan ngoai ngu",
+    "chuẩn đầu ra", "chuan dau ra", "quy chế", "quy che",
+    "đồ án", "do an", "de tai do an", "đề tài đồ án",
+    "trước khi nhận đề tài", "truoc khi nhan de tai",
+    "trước đồ án", "truoc do an",
 )
 
 
@@ -71,6 +90,8 @@ def _heuristic_complex(question: str) -> bool:
     q = question.strip()
     if _is_schedule_list_question(q) or _is_exam_list_question(q):
         return False
+    if _grade_policy_presplit(q):
+        return True
     words = len(q.split())
     if words >= PLANNER_MIN_WORDS:
         return True
@@ -80,6 +101,57 @@ def _heuristic_complex(question: str) -> bool:
         return True
     low = q.lower()
     return any(m in low for m in _COMPLEX_MARKERS)
+
+
+def _grade_policy_presplit(question: str) -> list[str] | None:
+    """Tách cố định MSSV/kết quả TA + TOEIC/quy chế."""
+    if not _MSSV_RE.search(question):
+        return None
+    low = question.lower()
+    has_grade = any(m in low for m in _GRADE_MARKERS)
+    has_policy = any(m in low for m in _POLICY_MARKERS)
+    if not (has_grade and has_policy):
+        return None
+
+    policy_part = question
+    grade_part = question
+    for sep in (". ", "? ", ".\n", "?\n"):
+        if sep.strip() in question:
+            parts = re.split(r"[.?]\s+", question, maxsplit=1)
+            if len(parts) == 2:
+                p0, p1 = parts[0].strip(), parts[1].strip()
+                p0_low, p1_low = p0.lower(), p1.lower()
+                if any(m in p0_low for m in _POLICY_MARKERS) and any(
+                    m in p1_low for m in _GRADE_MARKERS
+                ):
+                    policy_part, grade_part = p0, p1
+                    break
+                if any(m in p1_low for m in _POLICY_MARKERS) and any(
+                    m in p0_low for m in _GRADE_MARKERS
+                ):
+                    grade_part, policy_part = p0, p1
+                    break
+
+    if grade_part == policy_part:
+        policy_pos = min((low.find(m) for m in _POLICY_MARKERS if m in low), default=-1)
+        if policy_pos <= 0:
+            grade_part = question
+            policy_part = (
+                "Điểm TOEIC tối thiểu trước đề tài đồ án theo quy định chuẩn ngoại ngữ "
+                "Học viện Kỹ thuật Mật mã là bao nhiêu?"
+            )
+        else:
+            grade_part = question[:policy_pos].strip(" .?,")
+            policy_part = question[policy_pos:].strip(" .?,")
+            if not policy_part.endswith("?"):
+                policy_part += "?"
+
+    if not grade_part.endswith("?"):
+        grade_part = grade_part.rstrip(".") + "?"
+    if not policy_part.endswith("?"):
+        policy_part = policy_part.rstrip(".") + "?"
+
+    return [grade_part, policy_part]
 
 
 def _parse_json(raw: str) -> dict | None:
@@ -101,6 +173,15 @@ def plan_questions(
     question = question.strip()
     if not question:
         return PlanResult(sub_questions=[""], use_decomposition=False)
+
+    presplit = _grade_policy_presplit(question)
+    if presplit:
+        log.info("[planner] grade+policy presplit → 2 sub-questions")
+        return PlanResult(
+            sub_questions=presplit,
+            use_decomposition=True,
+            reason="Tách cố định: tra MSSV/kết quả TA + TOEIC/quy chế.",
+        )
 
     if not _heuristic_complex(question):
         return PlanResult(

@@ -68,7 +68,7 @@ def _infer_headers(first_row: list[str], second_row: list[str] | None) -> tuple[
         1 for c in first_row
         if re.search(r"mssv|mã|mon|điểm|diem|stt|họ tên|ho ten|tên", c, re.I)
     )
-    if header_like >= 1 or (second_row and not re.search(r"\b(?:AT|CT)\d{6}\b", first_row[0] or "", re.I)):
+    if header_like >= 1 or (second_row and not re.search(r"\b(?:AT|CT|DT)\d{6}\b", first_row[0] or "", re.I)):
         headers = first_row
         data_rows = [second_row] if second_row else []
         return headers, data_rows

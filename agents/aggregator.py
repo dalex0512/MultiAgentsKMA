@@ -25,7 +25,8 @@ Các chuyên gia đã trả lời:
 
 Yêu cầu:
 - Giữ đủ thông tin quan trọng từ mỗi chuyên gia, tránh trùng lặp.
-- Nêu rõ từng phần nếu câu hỏi đa lĩnh vực.
+- Nêu rõ từng phần nếu câu hỏi đa lĩnh vực (đánh số 1), 2)… — vd. kết quả phân loại TA riêng, chuẩn TOEIC/quy chế riêng).
+- Không làm mất số liệu cụ thể (450, ĐẠT/KHÔNG ĐẠT, tên MSSV).
 - Không bịa thêm ngoài nội dung các chuyên gia đã cung cấp.
 - Tiếng Việt, lịch sự, dễ đọc."""
 

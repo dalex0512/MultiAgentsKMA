@@ -28,9 +28,12 @@ Câu hỏi mới (có thể dùng "đó", "còn", "nữa", ...):
 
 Quy tắc:
 - Giữ nguyên ý; bổ sung chủ thể/mảng (tuyển sinh, biểu mẫu, quy chế, MSSV, ngành, môn…) nếu thiếu.
-- Nếu hội thoại trước có MSSV, ngành, môn, biểu mẫu — PHẢI đưa vào câu rewrite (vd. «CT060310», «CNTT», «Tiếng Anh 2»).
+- Nếu hội thoại trước có MSSV — PHẢI đưa vào câu rewrite (vd. «CT060310»).
+- Nếu hội thoại trước có học kỳ / đợt / năm học cụ thể (vd. «học kỳ 1 2024-2025 đợt 1») — PHẢI đưa vào câu rewrite khi câu mới là follow-up (không nêu lại học kỳ khác).
+- Nếu câu có "kì này", "kỳ này", "đợt này", "kì đó", "kỳ đó", "đợt đó", "kỳ trước", "kì trước" — PHẢI thay thế bằng học kỳ và đợt cụ thể từ hội thoại trước (vd. «học kỳ 1 2024-2025 đợt 1»).
+- Nếu hội thoại trước có tên môn học cụ thể — chỉ đưa vào khi câu mới liên quan đến môn đó.
 - Không trả lời câu hỏi, chỉ xuất MỘT câu hỏi tiếng Việt (một dòng).
-- Nếu câu đã đủ rõ, trả lại gần như nguyên văn."""
+- Nếu câu đã đủ rõ (có đủ MSSV, học kỳ, đợt), trả lại gần như nguyên văn."""
 
 
 @dataclass
@@ -71,7 +74,7 @@ def _needs_rewrite_score(question: str, history: list[dict]) -> float:
     if any(kw in q_lower for kw in context_keywords):
         score -= 0.2
 
-    if re.search(r"\b(?:AT|CT)\d{6}\b", q, re.I):
+    if re.search(r"\b(?:AT|CT|DT)\d{6}\b", q, re.I):
         score -= 0.3
 
     if words >= 20 and score < 0.1:
@@ -93,7 +96,9 @@ def _needs_rewrite(question: str, history: list[dict], session_summary: str) -> 
     if not q:
         return False
 
-    strong_markers = ("đó", "còn", "thế", "vậy", "sao", "nó")
+    strong_markers = ("đó", "còn", "thế", "vậy", "sao", "nó",
+                       "kì này", "kỳ này", "học kỳ này", "đợt này",
+                       "kì đó", "kỳ đó", "đợt đó", "kỳ trước", "kì trước")
     if not any(m in q.lower() for m in strong_markers):
         score = _needs_rewrite_score(q, history)
         if score < 0.65:
@@ -105,6 +110,12 @@ def _needs_rewrite(question: str, history: list[dict], session_summary: str) -> 
         "thế còn", "cái đó", "mẫu đó", "ngành đó",
         "bạn ấy", "ban ay", "anh ấy", "sinh viên đó", "sinh vien do",
         "thì sao", "thi sao", "thì bao nhiêu", "như trên", "y như",
+        "kì này", "kỳ này", "học kỳ này", "đợt này",
+        "kì đó", "kỳ đó", "đợt đó", "kỳ trước", "kì trước",
+        # Follow-up về môn học cụ thể
+        "môn đó", "mon do", "môn trên", "mon tren", "môn này", "mon nay",
+        "điểm đó", "diem do", "điểm trên", "kết quả đó", "kết quả trên",
+        "môn vừa nói", "môn vừa hỏi",
     )
     if any(m in q.lower() for m in follow_markers):
         return True
@@ -130,8 +141,15 @@ def rewrite(
             was_rewritten=False,
         )
 
+    # Câu tham chiếu học kỳ/đợt từ ngữ cảnh → bắt buộc rewrite dù score thấp
+    _CTX_TIME_MARKERS = (
+        "kì này", "kỳ này", "học kỳ này", "đợt này",
+        "kì đó", "kỳ đó", "đợt đó", "kỳ trước", "kì trước",
+    )
+    force_rewrite = bool(history) and any(m in question.lower() for m in _CTX_TIME_MARKERS)
+
     score = _needs_rewrite_score(question, history)
-    if score < 0.65:
+    if not force_rewrite and score < 0.65:
         log.info("[rewriter] skip (low score=%.2f): %s", score, question[:50])
         return RewriteResult(
             original=question,
@@ -139,7 +157,7 @@ def rewrite(
             was_rewritten=False,
         )
 
-    log.info("[rewriter] LLM rewrite (score=%.2f): %s", score, question[:50])
+    log.info("[rewriter] LLM rewrite (force=%s score=%.2f): %s", force_rewrite, score, question[:50])
 
     try:
         resp = openai_client.chat.completions.create(

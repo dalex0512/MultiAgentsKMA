@@ -90,7 +90,7 @@ def _heuristic_assessment(question: str) -> ComplexityAssessment:
     if any(m in low for m in _ADMISSION_MARKERS):
         intent = INTENT_FACTUAL
         score = 3
-    elif any(m in low for m in _GRADE_MARKERS) or re.search(r"\b(?:AT|CT)\d{6}\b", q, re.I):
+    elif any(m in low for m in _GRADE_MARKERS) or re.search(r"\b(?:AT|CT|DT)\d{6}\b", q, re.I):
         intent = INTENT_GRADE_LOOKUP
         score = 5
     elif any(m in low for m in _COMPLEX_MARKERS):

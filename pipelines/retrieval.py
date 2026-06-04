@@ -45,28 +45,91 @@ _DIEM_FILE_HINTS: list[tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]]
     (("2022-2023", "2022 2023", "20222023"), ("20222023", "hk1_2022"), ("20242025",)),
 ]
 
-# KMA: ATxxxxxx, CTxxxxxx, … (2 chữ + 6 số)
-_MSSV_RE = re.compile(r"\b(?:AT|CT)\d{6}\b", re.IGNORECASE)
+# File điểm đặc biệt: phân loại TA, CT4, chứng chỉ — không lẫn bảng điểm HK
+_DIEM_SPECIAL_FILE_HINTS: list[tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]] = [
+    (
+        ("phân loại", "phan loai", "tiếng anh", "tieng anh", "đầu vào", "dau vao",
+         "anh văn", "anh van", "kiểm tra tiếng anh", "kiem tra tieng anh"),
+        ("08_ket_qua_thi_anh_van", "ket_qua_thi_anh"),
+        ("hk1", "hk2", "dot1", "dot2"),
+    ),
+    (
+        ("ct4", "tốt nghiệp", "tot nghiep"),
+        ("04_ket_qua_tot_nghiep_ct4", "ket_qua_tot_nghiep"),
+        ("hk1", "hk2"),
+    ),
+    (
+        ("chứng chỉ", "chung chi", "nhan chung", "nhận chứng"),
+        ("12_ds_nhan_chung_chi_ta", "nhan_chung_chi"),
+        ("hk1", "hk2"),
+    ),
+]
+
+_ENGLISH_CLASSIFICATION_MARKERS = (
+    "phân loại", "phan loai", "tiếng anh", "tieng anh", "đầu vào", "dau vao",
+    "anh văn", "anh van", "kiểm tra tiếng anh", "kiem tra tieng anh",
+)
+
+# KMA: ATxxxxxx, CTxxxxxx, DTxxxxxx, … (2 chữ + 6 số)
+_MSSV_RE = re.compile(r"\b(?:AT|CT|DT)\d{6}\b", re.IGNORECASE)
+# Biến thể có dấu gạch hoặc khoảng trắng: AT-170514, AT 170514
+_MSSV_SEP_RE = re.compile(r"\b(AT|CT|DT)[\s\-](\d{6})\b", re.IGNORECASE)
 _TEXT_INDEX_READY = False
 
 
 def extract_mssv(query: str) -> str | None:
-    m = _MSSV_RE.search(query or "")
-    return m.group(0).upper() if m else None
+    q = query or ""
+    m = _MSSV_RE.search(q)
+    if m:
+        return m.group(0).upper()
+    # Thử normalize dấu gạch / khoảng trắng giữa prefix và số
+    m2 = _MSSV_SEP_RE.search(q)
+    if m2:
+        return (m2.group(1) + m2.group(2)).upper()
+    return None
+
+
+def extract_all_mssv(query: str) -> list[str]:
+    """Tìm tất cả MSSV (AT/CT/DT) trong câu hỏi, bảo toàn thứ tự, không trùng."""
+    q = query or ""
+    found: list[str] = []
+    for m in _MSSV_RE.finditer(q):
+        u = m.group(0).upper()
+        if u not in found:
+            found.append(u)
+    for m in _MSSV_SEP_RE.finditer(q):
+        u = (m.group(1) + m.group(2)).upper()
+        if u not in found:
+            found.append(u)
+    return found
+
+
+def _is_english_classification_query(query: str) -> bool:
+    low = (query or "").lower()
+    return any(m in low for m in _ENGLISH_CLASSIFICATION_MARKERS)
 
 
 def _parse_diem_period_hints(query: str) -> dict[str, str | None]:
-    """Tách hk / đợt / năm từ câu hỏi để khớp tên file (vd. hk2_20242025_dot1.pdf)."""
+    """Tách hk / đợt / năm từ câu hỏi để khớp tên file (vd. hk2_20242025_dot1.pdf).
+    Trả về multi_dot=True khi hỏi cả đợt 1 và đợt 2 → không lọc theo đợt.
+    """
     q = (query or "").lower()
     hints: dict[str, str | None] = {"hk": None, "dot": None, "year_key": None}
     if any(p in q for p in ("học kỳ 2", "hoc ky 2", "hk2", "học kỳ ii", "ky 2")):
         hints["hk"] = "hk2"
     elif any(p in q for p in ("học kỳ 1", "hoc ky 1", "hk1", "học kỳ i", "ky 1")):
         hints["hk"] = "hk1"
-    if any(p in q for p in ("đợt 1", "dot 1", "đợt một", "dot1")):
+
+    has_dot1 = any(p in q for p in ("đợt 1", "dot 1", "đợt một", "dot1"))
+    has_dot2 = any(p in q for p in ("đợt 2", "dot 2", "đợt hai", "dot2"))
+    if has_dot1 and has_dot2:
+        # Hỏi cả 2 đợt (so sánh / cải thiện) → không lọc đợt
+        hints["dot"] = None
+    elif has_dot1:
         hints["dot"] = "dot1"
-    elif any(p in q for p in ("đợt 2", "dot 2", "đợt hai", "dot2")):
+    elif has_dot2:
         hints["dot"] = "dot2"
+
     ym = re.search(r"20(\d{2})\s*[-–]?\s*20(\d{2})", q)
     if ym:
         hints["year_key"] = f"20{ym.group(1)}20{ym.group(2)}"
@@ -207,9 +270,20 @@ def _keyword_adjust(query: str, doc: dict, agent_id: str | None = None) -> float
                     delta += 0.22
                 if any(a in src for a in avoid):
                     delta -= 0.28
+        for phrases, prefer, avoid in _DIEM_SPECIAL_FILE_HINTS:
+            if any(p in q for p in phrases):
+                if any(p in src for p in prefer):
+                    delta += 0.38
+                if any(a in src for a in avoid):
+                    delta -= 0.32
         mssv = extract_mssv(query)
         if mssv and mssv in txt.upper():
             delta += 0.55
+        if _is_english_classification_query(query):
+            if "08_ket_qua_thi_anh_van" in src or "ket_qua_thi_anh" in src:
+                delta += 0.45
+            if src.startswith("hk") or "_hk" in src or "hk1" in src or "hk2" in src:
+                delta -= 0.35
     if agent_id == "tuyen_sinh":
         if any(m in q for m in ("điểm chuẩn", "diem chuan", "trúng tuyển", "trung tuyen", "chỉ tiêu")):
             if "02_de_an_tuyen_sinh_2024" in src and "2024" in q:
@@ -298,10 +372,19 @@ def _text_search_terms(query: str, agent_id: str) -> list[str]:
     elif agent_id == "khao_thi":
         if "120" in q or ("tín chỉ" in q and any(m in q for m in ("tối thiểu", "cử nhân", "quy chế"))):
             terms.append("120 tín")
-        if any(m in q for m in ("toeic", "tiếng anh", "ta1", "ta2", "ta3", "đồ án", "vstep")):
-            terms.extend(["TOEIC", "450", "350", "300"])
+        if any(m in q for m in ("toeic", "tiếng anh", "ta1", "ta2", "ta3", "đồ án", "do an", "de tai do an", "vstep")):
+            terms.extend(["TOEIC", "450", "350", "300", "03_quy_dinh_chuan_ngoai_ngu"])
         if "không áp dụng" in q or ("ngoại ngữ" in q and "đối tượng" in q):
             terms.extend(["tài năng", "chất lượng cao"])
+    elif agent_id == "diem_thi":
+        if _is_english_classification_query(q):
+            terms.extend(["08_ket_qua_thi_anh_van", "PHÂN LOẠI", "ĐẠT", "KHÔNG ĐẠT"])
+        if any(m in q for m in ("ct4", "tốt nghiệp", "tot nghiep")):
+            terms.append("04_ket_qua_tot_nghiep_ct4")
+        if any(m in q for m in ("chứng chỉ", "chung chi", "nhan chung", "nhận chứng")):
+            terms.append("12_ds_nhan_chung_chi_ta")
+        for mssv in extract_all_mssv(query):
+            terms.append(mssv)
     elif agent_id == "ma_tran":
         if any(m in q for m in ("tin học", "tin hoc", "thời gian", "bao nhiêu câu", "ma trận")):
             terms.extend(["13_ma_tran_de_thi_tin_hoc", "60 phút", "50 câu", "Thời gian làm bài"])
@@ -540,15 +623,27 @@ class QdrantRetriever:
         """Gom mọi chunk bảng điểm có MSSV; ưu tiên đúng file học kỳ (gợi ý trong câu hỏi)."""
         from config import GRADE_LOOKUP_CHUNK_LIMIT
 
-        mssv = extract_mssv(query)
-        if not mssv:
+        mssv_list = extract_all_mssv(query)
+        if not mssv_list:
             return []
         cap = chunk_limit or GRADE_LOOKUP_CHUNK_LIMIT
-        docs = self._lookup_mssv_chunks(mssv, agent_id, limit=cap)
+        per_mssv_cap = max(8, cap // len(mssv_list))
+
+        docs: list[dict] = []
+        for mssv in mssv_list:
+            mdocs = self._lookup_mssv_chunks(mssv, agent_id, limit=per_mssv_cap)
+            docs = _merge_docs(docs, mdocs)
+
+        text_hits = self._collect_text_search_docs(query, agent_id, limit=12)
+        if text_hits:
+            docs = _merge_docs(text_hits, docs)
+            log.info(f"[retrieval] grade lookup text-index: +{len(text_hits)} chunk(s)")
+
         if not docs:
             return []
 
-        docs = filter_docs_by_diem_period(query, docs)
+        if not _is_english_classification_query(query):
+            docs = filter_docs_by_diem_period(query, docs)
 
         if student_name:
             filtered = [d for d in docs if name_matches_text(student_name, d.get("text", ""))]
@@ -556,8 +651,21 @@ class QdrantRetriever:
                 docs = filtered
             else:
                 log.warning(
-                    f"[retrieval] MSSV {mssv}: không chunk nào khớp tên {student_name!r}, "
+                    f"[retrieval] MSSV {mssv_list}: không chunk nào khớp tên {student_name!r}, "
                     "dùng mọi chunk có MSSV"
+                )
+
+        if _is_english_classification_query(query):
+            special = [
+                d for d in docs
+                if "08_ket_qua_thi_anh_van" in (d.get("source") or "").lower()
+                or "ket_qua_thi_anh" in (d.get("source") or "").lower()
+            ]
+            if special:
+                docs = special
+                log.info(
+                    "[retrieval] English classification query → %s chunk(s) from 08_ket_qua",
+                    len(docs),
                 )
 
         by_source: dict[str, list[dict]] = {}
@@ -575,14 +683,12 @@ class QdrantRetriever:
         if not ranked:
             return docs[:cap]
 
-        # Một file khớp kỳ/đợt rõ → không trộn bảng điểm kỳ khác (vd. hk1_20222023)
         if len(ranked) == 1:
             _s, _src, chunks = ranked[0]
             chunks.sort(key=lambda c: (c.get("page", 0), c.get("text", "")[:60]))
-            # Một file đúng kỳ: giữ mọi chunk có MSSV (không lọc rerank làm mất môn)
             chosen = chunks if len(chunks) <= cap else rerank_documents(query, chunks, agent_id)
             log.info(
-                f"[retrieval] grade lookup {mssv}: {len(chosen)} chunk(s) — single file {_src!r}"
+                f"[retrieval] grade lookup {mssv_list}: {len(chosen)} chunk(s) — single file {_src!r}"
             )
             return chosen[:cap]
 
@@ -596,10 +702,10 @@ class QdrantRetriever:
 
         chosen = rerank_documents(query, chosen, agent_id)
         log.info(
-            f"[retrieval] grade lookup {mssv}: {len(chosen)} chunk(s) "
+            f"[retrieval] grade lookup {mssv_list}: {len(chosen)} chunk(s) "
             f"from {len({d['source'] for d in chosen})} file(s)"
         )
-        return chosen
+        return chosen[:cap]
 
     def embed(self, text: str) -> list[float]:
         resp = self._embed.embeddings.create(input=text, model=EMBED_MODEL)

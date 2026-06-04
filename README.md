@@ -1,79 +1,46 @@
-# KMA Multi-Agent Chatbot
+# Trợ lý ảo Học viện KMA
 
-Chatbot đa tác tử hỗ trợ sinh viên Học viện Kỹ thuật Mật mã (KMA): tra cứu tài liệu đào tạo qua RAG + điều phối agent theo chủ đề.
+Chatbot đa tác tử hỗ trợ sinh viên **Học viện Kỹ thuật Mật mã (KMA)** tra cứu tài liệu đào tạo: tuyển sinh, quy chế thi, ma trận đề, bảng điểm, biểu mẫu, danh sách thi và lịch thi. Hệ thống dùng RAG (Qdrant + embedding) và điều phối **7 agent chuyên môn** theo nội dung câu hỏi.
 
-## Chạy nhanh
+## Yêu cầu
+
+- Python 3.10+
+- Tài khoản OpenAI (API key cho LLM và embedding)
+- Qdrant (cloud hoặc local)
+- PostgreSQL (quản trị, tin mới — nếu dùng trang admin)
+
+## Cài đặt và chạy
 
 ```bash
+# 1. Cài thư viện
 pip install -r requirements.txt
-cp .env.example .env   # điền OPENAI_API_KEY, QDRANT_URL, QDRANT_API_KEY
+
+# 2. Cấu hình môi trường
+cp .env.example .env
+# Sửa .env: OPENAI_API_KEY, QDRANT_URL, QDRANT_API_KEY (và DB nếu dùng admin)
+
+# 3. Nạp tài liệu PDF trong docs/ vào Qdrant (7 agent)
 python ingest_all.py
+
+# 4. Chạy server
 uvicorn api.main:app --host 0.0.0.0 --port 8000
 ```
 
-- Trang sinh viên: `http://localhost:8000`
-- Quản trị: `http://localhost:8000/admin/login`
+Trên Windows, bước 2 có thể copy thủ công: `copy .env.example .env`.
 
-## Luồng xử lý
+## Truy cập
 
-```
-Câu hỏi → Guardrail → Rewriter → Supervisor → Specialist (1–3 agent) → Aggregator
-```
+| Trang | URL |
+|-------|-----|
+| Giao diện sinh viên (hỏi đáp) | http://localhost:8000 |
+| Quản trị | http://localhost:8000/admin/login |
 
-Trong mỗi specialist: ước lượng độ phức tạp (Qc) → chọn pipeline `native_rag` / `hybrid_rag` / `agentic_rag` → retrieve Qdrant theo `agent_id`.
-
-## 7 agent chuyên môn
-
-| `agent_id` | Thư mục `docs/` | Nội dung |
-|---|---|---|
-| `tuyen_sinh` | `tuyen_sinh_va_chuong_trinh_dao_tao/` | Tuyển sinh, CTĐT |
-| `khao_thi` | `khao_thi_quy_che/` | Quy chế, chuẩn đầu ra |
-| `ma_tran` | `ma_tran_de_thi/` | Ma trận đề thi |
-| `diem_thi` | `diem_thi/` | Bảng điểm (MSSV) |
-| `bieu_mau` | `bieu_mau/` | Biểu mẫu, thủ tục |
-| `danh_sach_thi` | `danh_sach_thi/` | Danh sách dự thi (MSSV/SBD, ca, phòng) |
-| `lich_thi` | `lich_thi/` | Lịch thi KTHP (môn, giờ, địa điểm) |
-
-## Tính năng cổng
-
-- **Hỏi đáp trực tuyến** — chat widget, hỗ trợ hội thoại nhiều lượt
-- **Bảng điểm / Lịch học** — tiện ích client-side
-- **Tin mới** — admin upload PDF, sinh viên xem trên trang chủ
-
-## API chính
-
-| Endpoint | Mô tả |
-|---|---|
-| `POST /chat` | Hỏi đáp (JSON) |
-| `POST /chat/stream` | Hỏi đáp (SSE) |
-| `POST /session/new` | Tạo phiên chat mới |
-| `GET /news` | Danh sách tin mới (public) |
-| `GET /agents` | Danh sách agent |
-
-Admin: upload tài liệu, tin mới, thống kê, benchmark — qua `/admin/*`.
-
-## Cấu trúc code
-
-```
-demo/
-├── agents/          # supervisor, planner, router, guardrail…
-├── pipelines/       # multi_agent_system, retrieval, RAG
-├── utils/rag/       # schedule_lookup, exam_list_lookup…
-├── admin_auth/      # đăng nhập admin, upload, analytics
-├── docs/            # corpus PDF theo domain
-├── api/main.py      # FastAPI
-├── static/          # giao diện sinh viên + admin
-└── ingest_all.py    # nạp Qdrant
-```
-
-## Công nghệ
-
-FastAPI · OpenAI (GPT-4o-mini + embedding) · Qdrant · PostgreSQL · Redis (session, tùy chọn)
-
-## Test
+## Ingest lại một agent (tùy chọn)
 
 ```bash
-python test_agent_schedule_exam_routing.py
+python ingest_all.py --domain diem_thi
 ```
 
-Benchmark: [eval/benchmark.md](eval/benchmark.md)
+Các domain: `tuyen_sinh`, `khao_thi`, `ma_tran`, `diem_thi`, `bieu_mau`, `danh_sach_thi`, `lich_thi`.
+
+Tài liệu nguồn nằm trong thư mục `docs/`, mỗi agent tương ứng một subfolder (ví dụ `docs/diem_thi/`).

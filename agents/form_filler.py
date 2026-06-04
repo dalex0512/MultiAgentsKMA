@@ -15,7 +15,19 @@ from openai import OpenAI
 
 from config import DOCS_ROOT, LLM_MODEL, OPENAI_API_KEY
 from agents.catalog_service import load_catalog, search_forms
-from agents.form_document import extract_form_text, fill_form_copy
+from agents.form_document import (
+    extract_form_text,
+    fill_form_copy,
+    resolve_template_path,
+)
+from agents.form_field_normalize import normalize_field_value
+from agents.form_field_schema import (
+    field_types_for,
+    is_fillable,
+    resolve_schema_key,
+    schema_fields_for,
+    write_schemas_file,
+)
 from agents.student_profile import (
     FormField,
     StudentProfile,
@@ -55,7 +67,20 @@ BATCH_REQUEST_RE = re.compile(
     r"trả\s+lời\s+một\s+lượt|tra\s+loi\s+mot\s+luot|gửi\s+một\s+lượt)",
     re.I,
 )
+EDIT_FIELD_RE = re.compile(
+    r"^(?:sửa|sua)\s*(\d+|[\w\s]+?)\s*[:=]\s*(.+)$",
+    re.I,
+)
 FILENAME_RE = re.compile(r"[\w\-]+\.(docx?|DOCX?)", re.I)
+
+# Đảm bảo field_schemas.json tồn tại
+from agents.form_field_schema import SCHEMA_PATH as _SCHEMA_PATH
+
+if not _SCHEMA_PATH.is_file():
+    try:
+        write_schemas_file()
+    except Exception as _schema_err:
+        log.debug(f"[form_fill] schema init: {_schema_err}")
 
 BATCH_HINT = (
     "\n\n_Bạn có thể trả lời **từng mục**, hoặc gõ **một lượt** để xem danh sách câu hỏi "
@@ -104,6 +129,8 @@ class FormFillState:
     prefilled_from_profile: bool = False
     fields_to_ask: list[FormField] = field(default_factory=list)  # subset cần hỏi
     batch_mode: bool = False
+    field_types: dict[str, str] = field(default_factory=dict)
+    unfilled_keys: list[str] = field(default_factory=list)
 
 
 # file_id -> absolute path (chỉ file trong FILLED_ROOT)
@@ -145,6 +172,14 @@ def _resolve_filename(question: str, history: list[dict]) -> str | None:
             if fname in c or meta.get("display_name", "") in c:
                 return fname
     return None
+
+
+def _extract_fields_for_form(filename: str, text: str, display_name: str) -> list[FormField]:
+    schema_key = resolve_schema_key(filename)
+    from_schema = schema_fields_for(schema_key)
+    if from_schema:
+        return from_schema
+    return _extract_fields_llm(text, display_name)
 
 
 def _extract_fields_llm(text: str, display_name: str) -> list[FormField]:
@@ -216,8 +251,9 @@ def _generate_filled_file(
     filename: str,
     fields: list[FormField],
     answers: dict[str, str],
-) -> tuple[str, str, str]:
-    template = BIEU_MAU_DIR / filename
+    field_types: dict[str, str] | None = None,
+) -> tuple[str, str, str, list[str]]:
+    template = resolve_template_path(BIEU_MAU_DIR, filename)
     if not template.is_file():
         raise FileNotFoundError(filename)
 
@@ -225,19 +261,28 @@ def _generate_filled_file(
     out_dir = FILLED_ROOT / token
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    stem = template.stem
+    stem = Path(filename).stem
     ext = template.suffix
     ts = datetime.now().strftime("%Y%m%d_%H%M")
     out_name = f"{stem}_da_dien_{ts}{ext}"
     output = out_dir / out_name
 
     labels = {f.key: f.label for f in fields}
-    fill_form_copy(template, output, labels, answers)
+    schema_key = resolve_schema_key(filename)
+    ft = field_types or field_types_for(schema_key)
+    unfilled = fill_form_copy(
+        template,
+        output,
+        labels,
+        answers,
+        catalog_filename=schema_key,
+        field_types=ft,
+    )
 
     download_id = token
     _download_registry[download_id] = output.resolve()
     url = f"/forms/filled/{download_id}/{out_name}"
-    return download_id, url, out_name
+    return download_id, url, out_name, unfilled
 
 
 def _format_progress(state: FormFillState) -> str:
@@ -375,12 +420,22 @@ class FormFillService:
         catalog = load_catalog()
         meta = catalog.get(fname, {})
         display = meta.get("display_name", fname)
-        path = BIEU_MAU_DIR / fname
-        if not path.is_file():
-            return (f"Không tìm thấy file mẫu `{fname}` trên hệ thống.", state, None, profile)
+
+        if fname.lower().endswith(".pdf") or not is_fillable(fname):
+            return (
+                f"Mẫu **{display}** là file PDF/hướng dẫn — hệ thống **không hỗ trợ điền tự động**. "
+                f"Bạn có thể [tải mẫu](/docs/bieu_mau/{fname}) và điền tay, "
+                "hoặc chọn biểu mẫu Word khác trong catalog.",
+                state,
+                None,
+                profile,
+            )
 
         try:
-            text = extract_form_text(path)
+            tpl_path = resolve_template_path(BIEU_MAU_DIR, fname)
+            text = extract_form_text(tpl_path)
+        except FileNotFoundError:
+            return (f"Không tìm thấy file mẫu `{fname}` trên hệ thống.", state, None, profile)
         except Exception as e:
             log.error(f"[form_fill] extract {fname}: {e}")
             return (
@@ -390,7 +445,7 @@ class FormFillService:
                 profile,
             )
 
-        fields = _extract_fields_llm(text, display)
+        fields = _extract_fields_for_form(fname, text, display)
         if not fields:
             return (
                 "Không xác định được các ô cần điền trong mẫu này. "
@@ -401,6 +456,8 @@ class FormFillService:
             )
 
         prefill, need_ask = apply_profile_to_fields(profile, fields)
+        schema_key = resolve_schema_key(fname)
+        ft = field_types_for(schema_key)
         new_state = FormFillState(
             status="collecting",
             filename=fname,
@@ -410,6 +467,7 @@ class FormFillService:
             fields_to_ask=need_ask if need_ask else list(fields),
             current_index=0,
             prefilled_from_profile=bool(prefill) and profile.forms_filled > 0,
+            field_types=ft,
         )
 
         extra = {"form_filename": fname, "form_display_name": display}
@@ -580,6 +638,8 @@ class FormFillService:
         state: FormFillState,
         profile: StudentProfile,
     ) -> None:
+        ft = state.field_types.get(field.key, "text")
+        val = normalize_field_value(ft, val)
         state.answers[field.key] = val
         canon = canonical_key_for_field(field)
         if canon:
@@ -623,6 +683,45 @@ class FormFillService:
         state.current_index = len(_fields_pending(state))
         return self._finalize(session_id, state, profile)[:3]
 
+    def _try_edit_field(
+        self,
+        text: str,
+        session_id: str,
+        state: FormFillState,
+        profile: StudentProfile,
+    ) -> tuple[str, FormFillState, dict | None] | None:
+        m = EDIT_FIELD_RE.match(text.strip())
+        if not m:
+            return None
+        frag, val = m.group(1).strip(), m.group(2).strip()
+        target: FormField | None = None
+        if frag.isdigit():
+            idx = int(frag) - 1
+            pending = _fields_pending(state)
+            if 0 <= idx < len(pending):
+                target = pending[idx]
+        if not target:
+            ck = resolve_correction_key(frag)
+            for f in state.fields:
+                if ck and canonical_key_for_field(f) == ck:
+                    target = f
+                    break
+                if frag.lower() in f.label.lower():
+                    target = f
+                    break
+        if not target:
+            return (
+                f"Không tìm thấy mục «{frag}». Gõ **sửa 3: ...** (số thứ tự) hoặc **sửa họ tên: ...**.",
+                state,
+                None,
+            )
+        self._apply_field_answer(target, val, state, profile)
+        return (
+            f"Đã cập nhật **{target.label}** → {state.answers.get(target.key, val)}.",
+            state,
+            None,
+        )
+
     def _collect_answer(
         self,
         answer_text: str,
@@ -630,9 +729,13 @@ class FormFillService:
         state: FormFillState,
         profile: StudentProfile,
     ) -> tuple[str, FormFillState, dict | None]:
+        edited = self._try_edit_field(answer_text, session_id, state, profile)
+        if edited:
+            return edited
+
         lines = _split_batch_lines(answer_text)
         remaining = _remaining_fields(state)
-        if len(lines) >= 2 and len(lines) == len(remaining):
+        if state.batch_mode and len(lines) >= 2 and len(lines) == len(remaining):
             return self._collect_batch(answer_text, session_id, state, profile)
 
         pending = _fields_pending(state)
@@ -671,11 +774,12 @@ class FormFillService:
         profile: StudentProfile,
     ) -> tuple[str, FormFillState, dict | None, StudentProfile]:
         try:
-            download_id, url, out_name = _generate_filled_file(
+            download_id, url, out_name, unfilled = _generate_filled_file(
                 session_id,
                 state.filename,
                 state.fields,
                 state.answers,
+                state.field_types,
             )
         except Exception as e:
             log.error(f"[form_fill] generate failed: {e}")
@@ -693,12 +797,25 @@ class FormFillService:
         state.download_id = download_id
         state.download_url = url
         state.output_name = out_name
+        state.unfilled_keys = unfilled
 
         summary = "\n".join(
             f"- {f.label}: {state.answers.get(f.key, '')}"
             for f in state.fields
             if state.answers.get(f.key)
         )
+
+        unfilled_note = ""
+        if unfilled:
+            labels = [
+                next((f.label for f in state.fields if f.key == k), k)
+                for k in unfilled
+            ]
+            unfilled_note = (
+                "\n\n**Các mục chưa ghi vào file** (nhãn trên mẫu không khớp — "
+                "vui lòng điền tay trong Word):\n"
+                + "\n".join(f"- {lb}" for lb in labels)
+            )
 
         reuse_hint = ""
         if profile.forms_filled >= 1:
@@ -713,7 +830,8 @@ class FormFillService:
             f"Mẫu: **{state.display_name}**\n\n"
             f"**[Tải file đã điền]({url})** — bản sao, không thay đổi file gốc.\n\n"
             f"#### Tóm tắt thông tin\n"
-            f"{summary}\n\n"
+            f"{summary}"
+            f"{unfilled_note}\n\n"
             "Vui lòng mở file và **đối chiếu từng mục** trước khi nộp."
             f"{reuse_hint}",
             state,

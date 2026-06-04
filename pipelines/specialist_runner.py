@@ -39,9 +39,10 @@ def _rag_call_kwargs(common: dict) -> dict:
 
 _SCHEDULE_QUERY_MARKERS = (
     "lịch thi", "lich thi", "kthp", "môn thi", "mon thi", "học kỳ", "hoc ky",
-    "kì 1", "kì 2", "ki 1", "ki 2", "hk1", "hk2",
+    "kì 1", "kì 2", "ki 1", "ki 2", "kỳ 1", "kỳ 2", "hk1", "hk2",
     "đợt thi", "dot thi", "đợt 1", "dot 1", "đợt 2", "dot 2",
     "đợt1", "đợt2", "dot1", "dot2",
+    "đợt thi 1", "đợt thi 2",
     "danh sách", "danh sach", "liệt kê", "liet ke", "những môn", "các môn",
     "ngày thi", "phòng thi", "phong thi", "ca thi", "hình thức thi",
     "thời gian thi", "thoi gian thi", "bắt đầu thi", "bat dau thi",
@@ -50,6 +51,16 @@ _SCHEDULE_QUERY_MARKERS = (
     "thi kết thúc học phần", "thi ket thuc hoc phan",
     "thi lại", "thi lai", "lan2", "lần 2",
     "môn nào", "mon nao", "đào tạo", "dao tao", "khoá", "khóa",
+    # Bổ sung: phrasings người dùng hỏi về ngày/giờ thi theo môn
+    "thi ngày nào", "thi ngay nao",
+    "thi khi nào", "thi khi nao",
+    "thi lúc nào", "thi luc nao",
+    "thi vào ngày", "thi vao ngay",
+    "thi ngày mấy", "thi ngay may",
+    "thi môn gì", "thi mon gi",
+    "có môn gì", "co mon gi",
+    "bao gồm môn", "bao gom mon",
+    "gồm môn gì", "gom mon gi",
 )
 
 
@@ -107,15 +118,39 @@ def _should_grade_lookup(
     retrieval_query: str,
     assessment,
 ) -> bool:
-    """MSSV + tra điểm → luôn grade_lookup (không agentic), bất kể Qc."""
+    """MSSV + tra điểm → grade_lookup; bỏ qua sub-q thuần TOEIC/quy chế."""
     if agent_id != "diem_thi":
         return False
-    blob = f"{question} {retrieval_query or ''}"
+    rq = (retrieval_query or question).strip()
+    blob = f"{question} {rq}"
     if not extract_mssv(blob):
         return False
-    if wants_grade_lookup(agent_id, question, retrieval_query):
+    if _is_policy_only_query(rq):
+        return False
+    if wants_grade_lookup(agent_id, question, rq):
         return True
     return (getattr(assessment, "intent", None) or "") == INTENT_GRADE_LOOKUP
+
+
+def _is_policy_only_query(text: str) -> bool:
+    """Câu tra cứu thuần quy chế/TOEIC — không dùng grade_lookup."""
+    low = (text or "").lower()
+    policy_markers = (
+        "toeic", "vstep", "chuẩn ngoại ngữ", "chuan ngoai ngu",
+        "chuẩn đầu ra", "chuan dau ra", "quy chế", "quy che",
+        "đồ án", "do an", "de tai do an", "đề tài đồ án",
+        "trước khi nhận đề tài", "truoc khi nhan de tai",
+        "trước đồ án", "truoc do an",
+    )
+    grade_markers = (
+        "phân loại", "phan loai", "tiếng anh", "tieng anh", "đầu vào", "dau vao",
+        "bảng điểm", "bang diem", "học kỳ", "hoc ky", "kết quả", "ket qua",
+        "đạt", "dat", "không đạt", "khong dat", "chứng chỉ", "chung chi",
+        "anh văn", "anh van",
+    )
+    if not any(m in low for m in policy_markers):
+        return False
+    return not any(m in low for m in grade_markers)
 
 
 def _persona_system(agent_id: str, session_summary: str = "") -> str:
@@ -128,8 +163,9 @@ def _persona_system(agent_id: str, session_summary: str = "") -> str:
     )
     if agent_id == "bieu_mau":
         base += (
-            "\nKhi sinh viên chọn biểu mẫu, có thể gợi ý gõ «điền giúp tôi» "
-            "để hệ thống hỏi từng mục và tạo file Word đã điền (bản sao, không sửa file gốc)."
+            "\nKhi sinh viên chọn biểu mẫu Word (.docx), gợi ý gõ «điền giúp tôi» "
+            "để hệ thống hỏi từng mục và tạo file đã điền (bản sao). "
+            "File PDF/hướng dẫn chỉ hỗ trợ tải và tra cứu thủ tục, không điền tự động."
         )
     if agent_id == "diem_thi":
         base += (

@@ -35,7 +35,8 @@ _COHORT_DAO_TAO_RE = re.compile(
 )
 _COHORT_CODE_RE = re.compile(r"\b(AT|CT|DT)\d{1,2}[A-Za-z0-9]*\b", re.IGNORECASE)
 _SUBJECT_QUERY_RE = re.compile(
-    r"(?:môn|mon)\s+([^,;:.!?]+?)(?=\s+(?:thi|học kỳ|hoc ky|kì|ki|đợt|dot|năm|nam|ở đâu|o dau|$))",
+    # Lookahead: hoặc (khoảng trắng + stop word) hoặc cuối chuỗi
+    r"(?:môn|mon)\s+([^,;:.!?]+?)(?=(?:\s+(?:thi|học kỳ|hoc ky|kì|ki|đợt|dot|năm|nam|ở đâu|o dau))|$)",
     re.IGNORECASE,
 )
 _STOP_WORDS = {
@@ -67,11 +68,21 @@ def wants_full_subject_list(question: str) -> bool:
             "những môn", "cac mon", "các môn", "danh sách môn", "danh sach mon",
             "liệt kê môn", "liet ke mon", "co nhung mon", "có những môn",
             "môn nào", "mon nao", "thi những môn", "thi nhung mon",
+            # Bổ sung: "thi môn gì", "có môn gì", "môn gì thi"
+            "thi môn gì", "thi mon gi",
+            "có môn gì", "co mon gi",
+            "môn gì thi", "mon gi thi",
+            "bao gồm môn", "bao gom mon",
+            "gồm môn", "gom mon",
+            # Hỏi số lượng / thống kê môn thi
+            "bao nhiêu môn", "bao nhieu mon",
+            "tổng số môn", "tong so mon",
+            "mấy môn thi", "may mon thi",
         )
     ):
         return True
     if "môn thi" in blob or "mon thi" in blob:
-        if any(m in blob for m in ("là gì", "la gi", "nào", "nao", "gồm", "gom", "những", "cac", "các")):
+        if any(m in blob for m in ("là gì", "la gi", "nào", "nao", "gồm", "gom", "những", "cac", "các", "gì", "gi ")):
             return True
     if "kthp" in blob and any(m in blob for m in ("môn", "mon", "lịch", "lich")):
         return True
@@ -93,6 +104,15 @@ def wants_schedule_table_query(question: str) -> bool:
             "địa điểm", "dia diem", "khóa đào tạo", "khoa dao tao", "khoá đào tạo",
             "thi kết thúc học phần", "thi ket thuc hoc phan", "ở đâu", "o dau",
             "hạn nộp", "han nop", "hạn chấm", "han cham",
+            # Bổ sung: người dùng hỏi "thi ngày nào", "thi khi nào", "thi lúc nào"
+            "thi ngày nào", "thi ngay nao",
+            "thi khi nào", "thi khi nao",
+            "thi lúc nào", "thi luc nao",
+            "thi vào ngày", "thi vao ngay",
+            "thi ngày mấy", "thi ngay may",
+            "thi môn gì", "thi mon gi",
+            # Không dấu: "thi đâu" → "thi dau", "thi o dau" (bat dau thi đã có trên)
+            "thi dau", "thi o dau",
         )
     ):
         return False
@@ -107,22 +127,49 @@ def parse_schedule_file_hints(query: str) -> dict[str, str | bool | None]:
     hints: dict[str, str | bool | None] = {
         "ki": None, "dot": None, "year_key": None, "lan2": False,
     }
-    if any(p in q for p in ("học kỳ 2", "hoc ky 2", "hk2", "học kỳ ii", "ki2", "ki 2", "ky 2", "kì 2", "hoc ki 2")):
+    # Học kỳ 2 — xử lý cả "kỳ" (ỳ) lẫn "kì" (ì) và các biến thể không dấu
+    if any(
+        p in q
+        for p in (
+            "học kỳ 2", "hoc ky 2", "hk2", "học kỳ ii", "ki2", "ki 2",
+            "ky 2", "kì 2", "hoc ki 2",
+            "kỳ 2",   # biến thể ỳ
+        )
+    ):
         hints["ki"] = "ki2"
     elif any(
         p in q
         for p in (
             "học kỳ 1", "hoc ky 1", "hk1", "học kỳ i", "ki1", "ky 1",
             "kì 1", "ki 1", "học kì 1", "hoc ki 1",
+            "kỳ 1",   # biến thể ỳ
         )
     ):
         hints["ki"] = "ki1"
-    if any(p in q for p in ("đợt 1", "dot 1", "đợt một", "dot1", "đợt1")):
+
+    # Đợt thi — xử lý thêm "đợt thi 1/2", "đợt thứ nhất/hai"
+    if any(
+        p in q
+        for p in (
+            "đợt 1", "dot 1", "đợt một", "dot1", "đợt1",
+            "đợt thi 1", "dot thi 1", "đợt thi nhất", "đợt thứ nhất",
+        )
+    ):
         hints["dot"] = "dot1"
-    elif any(p in q for p in ("đợt 2", "dot 2", "đợt hai", "dot2", "đợt2")):
+    elif any(
+        p in q
+        for p in (
+            "đợt 2", "dot 2", "đợt hai", "dot2", "đợt2",
+            "đợt thi 2", "dot thi 2", "đợt thi hai", "đợt thứ hai",
+        )
+    ):
         hints["dot"] = "dot2"
+
+    # Thi lại / lần 2
     if any(p in q for p in ("thi lại", "thi lai", "lần 2", "lan 2", "lan2", "học lại", "hoc lai")):
         hints["lan2"] = True
+
+    # Năm học
     ym = re.search(r"20(\d{2})\s*[-–/]?\s*20(\d{2})", q)
     if ym:
         hints["year_key"] = f"20{ym.group(1)}20{ym.group(2)}"
@@ -203,6 +250,13 @@ def _cell(cells: list[str], idx: int | None) -> str:
     return cells[idx].strip()
 
 
+# Cohort bare: AT19, CT7, DT6 (1-2 chữ số, KHÔNG phải MSSV 6 chữ số)
+# (?!\d) đảm bảo không match AT200201 (kế tiếp là chữ số)
+_COHORT_BARE_RE = re.compile(
+    r"(?<![A-Za-z0-9])((?:AT|CT|DT)\d{1,2})(?!\d)",
+    re.IGNORECASE,
+)
+
 def parse_cohort_from_query(query: str) -> str | None:
     q = query or ""
     m = _COHORT_DAO_TAO_RE.search(q)
@@ -221,6 +275,11 @@ def parse_cohort_from_query(query: str) -> str | None:
             expanded = expand_khoa_cell(m2.group(1))
             if expanded:
                 return expanded[0]
+    # Bare cohort codes (không có từ "khóa") — AT19, CT7, DT6
+    # (?!\d) loại trừ MSSV như AT200201
+    bare = _COHORT_BARE_RE.search(q)
+    if bare:
+        return bare.group(1).upper()
     return None
 
 
@@ -356,14 +415,64 @@ def _extract_subject_query(question: str) -> str | None:
     return None
 
 
+def _extract_multi_subject_queries(question: str) -> list[str]:
+    """Tách nhiều tên môn trong câu hỏi (vd. 'môn CSDL và môn Mạng máy tính').
+    Dùng lookahead/lookbehind thay vì \\b vì \\b không nhận dạng tiếng Việt Unicode.
+    """
+    q = (question or "").strip()
+    # Tách tại "và môn", "với môn", "cùng môn" (có khoảng trắng bao quanh)
+    parts = re.split(
+        r"\s+(?:và|va|với|voi|cùng|cung)\s+(?:môn|mon)\s+",
+        q,
+        flags=re.IGNORECASE,
+    )
+    subjects: list[str] = []
+    # Phần đầu tiên: tìm "môn X" bình thường
+    if parts:
+        first_subject = _extract_subject_query(parts[0])
+        if first_subject:
+            subjects.append(first_subject)
+    # Các phần còn lại: mỗi phần bắt đầu ngay bằng tên môn (connector + "môn" đã cắt)
+    for part in parts[1:]:
+        # Dừng tại "học kỳ", "hk", "đợt", "dot", "năm", "thi"
+        tail = re.split(
+            r"\s+(?:thi|học kỳ|hoc ky|kì|ki|hk\d|đợt|dot|năm|nam)\b",
+            part, maxsplit=1, flags=re.IGNORECASE,
+        )[0].strip(" ,;:.")
+        if len(tail) >= 3:
+            subjects.append(tail)
+    return subjects
+
+
 def _filter_rows_by_subject(question: str, rows: list[ScheduleRow]) -> tuple[list[ScheduleRow], str | None]:
+    # Thử tách nhiều môn trước
+    multi = _extract_multi_subject_queries(question)
+    if len(multi) > 1:
+        result: list[ScheduleRow] = []
+        seen_keys: set[str] = set()
+        for subj in multi:
+            filtered_single, _ = _filter_rows_by_subject_single(subj, rows)
+            for r in filtered_single:
+                key = r.mon_thi.lower()
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    result.append(r)
+        return (result, " / ".join(multi)) if result else (rows, multi[0] if multi else None)
+
     subject_q = _extract_subject_query(question)
     if not subject_q:
         return rows, None
+    filtered, _ = _filter_rows_by_subject_single(subject_q, rows)
+    return filtered, subject_q
+
+
+def _filter_rows_by_subject_single(
+    subject_q: str, rows: list[ScheduleRow]
+) -> tuple[list[ScheduleRow], str | None]:
     q_norm = _norm_text(subject_q)
     q_tokens = _subject_tokens(subject_q)
     if not q_tokens:
-        return rows, None
+        return rows, subject_q
     scored: list[tuple[tuple[int, int, int], ScheduleRow]] = []
     for r in rows:
         row_norm = _norm_text(r.mon_thi)
@@ -424,12 +533,14 @@ def build_schedule_answer(question: str, docs: list[dict], source: str) -> str |
             f"- Kiểm tra đúng học kỳ/đợt/năm hoặc mã khóa trong PDF (vd. DT5 thay vì CT5)."
         )
 
-    if not cohort and len(rows) < 5:
-        log.warning("[schedule_lookup] chỉ %s dòng — fallback LLM", len(rows))
+    if not rows:
+        # Không có dòng nào sau khi parse — có thể file chưa ingest hoặc parse lỗi
         return None
 
-    if not rows:
-        return None
+    # Nếu quá ít dòng (< 5) mà không có cohort filter — có thể parse không đủ
+    # Nhưng vẫn trả kết quả (không fallback None) vì đây là dữ liệu thực từ bảng
+    if not cohort and len(rows) < 5:
+        log.warning("[schedule_lookup] chỉ %s dòng — có thể parse chưa đủ, vẫn trả kết quả", len(rows))
 
     filtered_rows, subject_q = _filter_rows_by_subject(question, rows)
     if filtered_rows:

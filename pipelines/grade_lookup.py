@@ -19,6 +19,7 @@ from config import (
 from pipelines.retrieval import (
     QdrantRetriever,
     extract_mssv,
+    extract_all_mssv,
     extract_student_name,
 )
 from pipelines.rag_pipeline import _sources_from_docs
@@ -34,11 +35,15 @@ _NOT_FOUND_RE = re.compile(
 
 GRADE_LOOKUP_SYSTEM = (
     "Bạn là trợ lý tra cứu bảng điểm KMA (agent diem_thi).\n"
-    "Nhiệm vụ: đọc bảng có MSSV và liệt kê ĐỦ từng môn / học phần của sinh viên trong đúng học kỳ.\n"
+    "Nhiệm vụ: đọc bảng có MSSV và trả lời đúng phạm vi câu hỏi (môn cụ thể hoặc toàn bộ học kỳ).\n"
     "QUY TẮC BẮT BUỘC:\n"
-    "- Nếu tài liệu user có chuỗi MSSV được hỏi (vd. CT060310) kèm điểm hoặc Đạt/Không đạt: "
-    "PHẢI liệt kê hết các dòng/môn — KHÔNG được trả «Không tìm thấy thông tin trong tài liệu KMA».\n"
-    "- Chỉ trả «Không tìm thấy» khi đã đọc hết tài liệu và không có MSSV hoặc tên sinh viên.\n"
+    "- Nếu tài liệu có chuỗi MSSV được hỏi kèm điểm hoặc Đạt/Không đạt: "
+    "PHẢI trả lời — KHÔNG được trả «Không tìm thấy thông tin trong tài liệu KMA».\n"
+    "- Nếu câu hỏi hỏi MÔN CỤ THỂ: chỉ trả lời đúng môn đó, không liệt kê môn khác.\n"
+    "- Nếu câu hỏi hỏi CHUNG: liệt kê đủ các môn trong đúng học kỳ/đợt.\n"
+    "- Nếu câu hỏi không rõ học kỳ và tài liệu có nhiều kỳ: hỏi lại học kỳ/đợt cụ thể.\n"
+    "- Không tính hoặc bịa GPA/xếp loại khi không đủ dữ liệu tín chỉ.\n"
+    "- Chỉ trả «Không tìm thấy» khi đã đọc hết tài liệu và không có MSSV.\n"
     "- Giữ đúng cột/hàng bảng; không bịa điểm."
     + persona_suffix_for_agent("diem_thi")
 )
@@ -53,7 +58,7 @@ def build_grade_lookup_system(session_summary: str = "") -> str:
 
 # «Môn thi: Tên học phần - C6» ngay trước bảng điểm (layout PDF KMA)
 _MON_THI_INLINE_RE = re.compile(
-    r"M[oô]n\s+thi\s*:\s*(.+?)(?:\s*-\s*[A-Z]?\d+)?\s+(?:STT|\|)",
+    r"M[oô]n\s+thi\s*:\s*(.+?)(?:\s*-\s*(?:[A-Z]?\d+|[ACD]\d+[ACD]\d+[ACD]\d+))?\s+(?:STT|\|)",
     re.IGNORECASE | re.DOTALL,
 )
 _MON_THI_LINE_RE = re.compile(
@@ -67,6 +72,10 @@ _GRADE_TRIGGERS = (
     "đạt", "dat", "không đạt", "khong dat", "xem điểm", "tra cứu", "tra cuu",
     "phân loại", "phan loai", "tiếng anh", "tieng anh", "đầu vào", "dau vao",
     "kiểm tra", "kiem tra", "danh sách", "danh sach",
+    # Tốt nghiệp CT4, chứng chỉ, Anh văn
+    "tốt nghiệp", "tot nghiep", "ct4", "chứng chỉ", "chung chi",
+    "anh văn", "anh van", "nhận chứng", "nhan chung",
+    "hoàn thành", "hoan thanh", "ra trường", "ra truong",
 )
 
 GRADE_LOOKUP_PROMPT = """\
@@ -80,12 +89,19 @@ Câu hỏi: {question}
 
 YÊU CẦU BẮT BUỘC:
 0. Dữ liệu là BẢNG CÓ CẤU TRÚC (hàng/cột): đọc đúng từng hàng, không đảo MSSV/môn/điểm.
-1. Liệt kê TẤT CẢ học phần / môn học (và điểm, hoặc Đạt/Không đạt, hoặc điểm chữ) của sinh viên này
-   có trong tài liệu — dùng bảng markdown hoặc bullet từng dòng, KHÔNG gộp chung một câu.
-   Mỗi nhóm điểm PHẢI ghi **tên môn đầy đủ** lấy từ dòng «Môn thi: …» ngay phía trên bảng
-   (vd. «Cơ sở an toàn và bảo mật thông tin»), không chỉ liệt kê TP1/TP2/THI/HP.
-2. Chỉ trả lời đúng học kỳ / đợt / năm mà sinh viên hỏi — đọc tên file nguồn
-   (vd. hk2_20242025_dot1 = học kỳ 2, năm 2024-2025, đợt 1). Không liệt kê điểm kỳ khác.
+1. Xác định phạm vi câu hỏi:
+   a) Nếu câu hỏi nêu TÊN MÔN CỤ THỂ (vd. "môn Thực tập cơ sở", "môn Toán cao cấp") →
+      CHỈ trả lời điểm của đúng môn đó, không liệt kê các môn khác.
+   b) Nếu câu hỏi hỏi chung (vd. "điểm học kỳ X", "kết quả các môn", "có môn nào khác không") →
+      Liệt kê TẤT CẢ học phần có trong tài liệu thuộc đúng học kỳ/đợt — dùng bảng markdown hoặc bullet.
+   Mỗi môn PHẢI ghi **tên môn đầy đủ** lấy từ dòng «Môn thi: …» ngay phía trên bảng.
+2. Xác định học kỳ/đợt từ câu hỏi và tên file nguồn (vd. hk2_20242025_dot1 = HK2 2024-2025 đợt 1):
+   a) Nếu câu hỏi nêu rõ 1 học kỳ/đợt cụ thể → chỉ lấy dữ liệu từ file khớp, bỏ qua file kỳ khác.
+   b) Nếu câu hỏi hỏi NHIỀU kỳ cùng lúc (vd. "HK1 và HK2", "tất cả các kỳ", "toàn bộ") →
+      liệt kê theo từng kỳ riêng biệt, ghi rõ tên kỳ cho mỗi nhóm.
+   c) Nếu câu hỏi KHÔNG nêu học kỳ/đợt nhưng tài liệu có nhiều kỳ → hỏi lại:
+      "Bạn muốn xem điểm học kỳ nào? (vd. HK1 2024-2025 đợt 1, HK2 2024-2025 đợt 1…)"
+   d) Nếu câu hỏi KHÔNG nêu học kỳ/đợt nhưng tài liệu chỉ có 1 kỳ → hiển thị kỳ đó, ghi rõ tên kỳ.
 3. Nếu trong tài liệu không có đúng kỳ được hỏi, nói rõ; không dùng dữ liệu hk1/hk2 khác thay thế.
 4. Không bịa môn hoặc điểm không có trong tài liệu.
 5. Nếu hội thoại trước có câu "không tìm thấy" nhưng bảng dưới đây có MSSV — ưu tiên bảng, không lặp lỗi cũ.
@@ -93,6 +109,19 @@ YÊU CẦU BẮT BUỘC:
 7. Nếu không thấy MSSV hoặc tên trong tài liệu, trả lời: "Không tìm thấy thông tin trong tài liệu KMA."
 8. Nếu hỏi kết quả phân loại / kiểm tra tiếng Anh đầu vào: trả lời rõ sinh viên **ĐẠT** hay **KHÔNG ĐẠT**
    (hoặc có/không có trong danh sách), kèm lớp/khóa nếu có trong bảng.
+   Khi hỏi phân loại tiếng Anh đầu vào: CHỈ dùng file/bảng «KẾT QUẢ KIỂM TRA PHÂN LOẠI TIẾNG ANH»
+   hoặc nguồn `08_ket_qua_thi_anh_van`; BỎ QUA bảng «Môn thi: … - A20C8D7» từ file hk1/hk2 (đó là điểm học phần, không phải phân loại TA).
+9. Nếu câu hỏi nêu NHIỀU MSSV: trả lời riêng từng MSSV, không gộp hoặc hoán đổi kết quả.
+10. Nếu hỏi "có môn nào khác không", "còn môn nào không" → đối chiếu với môn đã nhắc trong hội thoại,
+   chỉ liệt kê các môn còn lại trong cùng học kỳ/đợt; nếu không còn môn nào → trả lời rõ "không có môn nào khác".
+11. Nếu hỏi GPA / điểm tổng kết / xếp loại tốt nghiệp: tính GPA từ cột HP và số tín chỉ nếu có đủ dữ liệu;
+    nếu không đủ dữ liệu → nói rõ "Không đủ dữ liệu để tính GPA/xếp loại từ tài liệu hiện có."
+    Không bịa ra GPA hoặc xếp loại.
+12. Ngưỡng điểm KMA (dùng khi hỏi "trượt", "không đạt", "đạt", "cải thiện"):
+    - HP >= 5.0 → ĐẠT (tích lũy được tín chỉ)
+    - HP < 5.0 → KHÔNG ĐẠT (phải thi lại hoặc học lại)
+    - HP < 4.0 → KHÔNG TÍCH LŨY tín chỉ (trượt hoàn toàn)
+    Áp dụng ngưỡng này để xác định môn nào đạt/trượt khi người dùng hỏi.
 
 Tài liệu (có thể nhiều trang / nhiều đoạn cùng bảng điểm):
 {context}
@@ -122,6 +151,26 @@ def _mssv_present_in_docs(mssv: str, docs: list[dict]) -> bool:
         return False
     u = mssv.upper()
     return any(u in (d.get("text") or "").upper() for d in docs)
+
+
+def _mssv_list_for_query(question: str, retrieval_query: str, primary: str) -> list[str]:
+    blob = f"{question} {retrieval_query}".strip()
+    found = extract_all_mssv(blob)
+    if found:
+        return found
+    return [primary] if primary else []
+
+
+def _build_grade_context_prefix(docs: list[dict], mssv_list: list[str]) -> str:
+    parts: list[str] = []
+    for m in mssv_list:
+        idx = _build_subject_grade_index(docs, m)
+        hints = _extract_mssv_row_hints(docs, m)
+        if idx:
+            parts.append(idx)
+        if hints:
+            parts.append(hints)
+    return "\n\n".join(parts)
 
 
 def _is_compact_grade_row(line: str, mssv: str) -> bool:
@@ -309,17 +358,15 @@ class GradeLookupPipeline:
             }
 
         context = _build_merged_context(docs, GRADE_LOOKUP_MAX_CONTEXT)
-        prefix_parts = [
-            _build_subject_grade_index(docs, mssv),
-            _extract_mssv_row_hints(docs, mssv),
-        ]
-        prefix = "\n\n".join(p for p in prefix_parts if p)
+        mssv_list = _mssv_list_for_query(question, retrieval_query or question, mssv)
+        mssv_display = ", ".join(mssv_list) if mssv_list else mssv
+        prefix = _build_grade_context_prefix(docs, mssv_list)
         if prefix:
             context = prefix + "\n\n" + context
         name_line = f"- Họ tên (đối chiếu): {name}" if name else "- Họ tên: (không gửi — chỉ lọc theo MSSV)"
 
         prompt = GRADE_LOOKUP_PROMPT.format(
-            mssv=mssv,
+            mssv=mssv_display,
             name_line=name_line,
             question=question.strip(),
             context=context,
@@ -331,11 +378,11 @@ class GradeLookupPipeline:
 
         t_llm = time.perf_counter()
         answer = self._generate_answer(messages)
-        if _is_not_found_answer(answer) and _mssv_present_in_docs(mssv, docs):
+        if _is_not_found_answer(answer) and any(_mssv_present_in_docs(m, docs) for m in mssv_list):
             log.warning("[grade_lookup] LLM «không tìm thấy» dù có MSSV — retry strict")
             retry_prompt = prompt + (
-                f"\n\nLƯU Ý: Tài liệu trên CÓ chứa MSSV {mssv}. "
-                "Bạn PHẢI liệt kê từng môn và điểm, không được trả lời không tìm thấy."
+                f"\n\nLƯU Ý: Tài liệu trên CÓ chứa MSSV {mssv_display}. "
+                "Bạn PHẢI trả lời đúng từng MSSV được hỏi, không được trả lời không tìm thấy."
             )
             messages[-1] = {"role": "user", "content": retry_prompt}
             answer = self._generate_answer(messages)
@@ -382,16 +429,14 @@ class GradeLookupPipeline:
             return
 
         context = _build_merged_context(docs, GRADE_LOOKUP_MAX_CONTEXT)
-        prefix_parts = [
-            _build_subject_grade_index(docs, mssv),
-            _extract_mssv_row_hints(docs, mssv),
-        ]
-        prefix = "\n\n".join(p for p in prefix_parts if p)
+        mssv_list = _mssv_list_for_query(question, retrieval_query or question, mssv)
+        mssv_display = ", ".join(mssv_list) if mssv_list else mssv
+        prefix = _build_grade_context_prefix(docs, mssv_list)
         if prefix:
             context = prefix + "\n\n" + context
         name_line = f"- Họ tên (đối chiếu): {name}" if name else "- Họ tên: (không gửi — chỉ lọc theo MSSV)"
         prompt = GRADE_LOOKUP_PROMPT.format(
-            mssv=mssv,
+            mssv=mssv_display,
             name_line=name_line,
             question=question.strip(),
             context=context,

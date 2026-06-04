@@ -57,6 +57,29 @@
       "expect_agents": ["tuyen_sinh", "bieu_mau"],
       "expect_not_agents": [],
       "notes": "multi_domain tuyển sinh + phí nhập học"
+    },
+    {
+      "id": "R-09",
+      "question": "Chuẩn TOEIC tối thiểu trước khi nhận đề tài đồ án của KMA là bao nhiêu? Và sinh viên AT200106 có đạt tiếng Anh đầu vào khóa A20C8D7 2024 (lần 2) không?",
+      "expect_agents": ["khao_thi", "diem_thi"],
+      "expect_not_agents": [],
+      "expect_intent": "multi_domain",
+      "notes": "L3-03 compound MSSV + TOEIC"
+    },
+    {
+      "id": "R-10",
+      "question": "Cho biet AT200401 va AT200201 trong ket qua phan loai tieng Anh dau vao A20C8D7 2024 lan 2. Diem TOEIC toi thieu truoc de tai do an la bao nhieu?",
+      "expect_agents": ["diem_thi", "khao_thi"],
+      "expect_not_agents": [],
+      "expect_intent": "multi_domain",
+      "notes": "L4-06 / planner2 compound 2 MSSV + TOEIC"
+    },
+    {
+      "id": "R-11",
+      "question": "Mã sinh viên AT200201 có đạt kiểm tra phân loại tiếng Anh đầu vào khóa A20C8D7 năm 2024 (lần 2) không?",
+      "expect_agents": ["diem_thi"],
+      "expect_not_agents": ["khao_thi"],
+      "notes": "Single MSSV TA — chỉ diem_thi"
     }
   ]
 }

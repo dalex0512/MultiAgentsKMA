@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
-_MSSV_RE = re.compile(r"\b(?:AT|CT)\d{6}\b", re.IGNORECASE)
+_MSSV_RE = re.compile(r"\b(?:AT|CT|DT)\d{6}\b", re.IGNORECASE)
 
 _CAPABILITY_TEXT = "\n".join(
     f"• **{cfg['name']}**: {cfg['description']}"

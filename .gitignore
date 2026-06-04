@@ -8,3 +8,4 @@ data/filled_forms/*
 .env.backup
 eval/results/
 guide/
+docs/

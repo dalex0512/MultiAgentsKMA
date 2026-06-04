@@ -56,7 +56,7 @@ _COMPLEX_MARKERS = (
 _ADMISSION_QC_MARKERS = ("điểm chuẩn", "diem chuan", "ngưỡng", "trúng tuyển", "chỉ tiêu")
 
 _TOKEN_RE = re.compile(r"[\wÀ-ỹ]+", re.UNICODE)
-_MSSV_RE = re.compile(r"\b(?:AT|CT)\d{6}\b", re.IGNORECASE)
+_MSSV_RE = re.compile(r"\b(?:AT|CT|DT)\d{6}\b", re.IGNORECASE)
 
 
 def _normalize_text(s: str) -> str:

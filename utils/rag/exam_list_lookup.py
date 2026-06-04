@@ -20,6 +20,7 @@ log = logging.getLogger(__name__)
 
 _MD_ROW_RE = re.compile(r"^\|\s*[-:]+")
 _MSSV_CELL_RE = re.compile(r"\b(AT|CT|DT)\d{6}\b", re.IGNORECASE)
+_MSSV_ALL_RE = re.compile(r"\b(?:AT|CT|DT)\d{6}\b", re.IGNORECASE)
 _SBD_LABEL_RE = re.compile(
     r"(?:sbd|số báo danh|so bao danh)\s*[:#]?\s*(\d{1,5})",
     re.IGNORECASE,
@@ -33,6 +34,18 @@ _HINH_THUC_HEADER_RE = re.compile(
     re.IGNORECASE,
 )
 _DATE_IN_QUERY_RE = re.compile(r"(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})")
+# Ngày viết bằng chữ: "ngày 21 tháng 4 năm 2026" hoặc "ngày 21 tháng 4"
+_DATE_VI_RE = re.compile(
+    r"ngày\s+(\d{1,2})\s+tháng\s+(\d{1,2})(?:\s+năm\s+(\d{4}))?",
+    re.IGNORECASE,
+)
+# Phòng thi: "phòng H1.101", "phòng thi 201", "phòng A3", "phòng TA1"
+# Yêu cầu phải có ít nhất một chữ số → tránh bắt nhầm "phòng nào", "phòng gì"
+# (Các ký tự có dấu tiếng Việt như "à", "ô" không nằm trong [A-Za-z] nên không khớp)
+_ROOM_RE = re.compile(
+    r"phòng\s+(?:thi\s+)?([A-Za-z]*\d[A-Za-z0-9./\-]{0,13})",
+    re.IGNORECASE,
+)
 
 
 @dataclass
@@ -91,10 +104,23 @@ def parse_sbd(question: str) -> str | None:
     return None
 
 
+def extract_all_mssv(question: str) -> list[str]:
+    """Tìm tất cả MSSV (AT/CT/DT) trong câu hỏi, bảo toàn thứ tự, không trùng."""
+    return list(dict.fromkeys(m.upper() for m in _MSSV_ALL_RE.findall(question or "")))
+
+
+def _parse_room_from_query(question: str) -> str | None:
+    """Trích tên phòng thi từ câu hỏi — vd. 'phòng H1.101', 'phòng thi A3'."""
+    m = _ROOM_RE.search(question or "")
+    return m.group(1).strip() if m else None
+
+
 def parse_date_hints(query: str) -> dict[str, str]:
     """Ngày / thứ / sáng-chiều từ câu hỏi để khớp tên file danh-sach-thi-*."""
     q = (query or "").lower()
     hints: dict[str, str] = {}
+
+    # Ưu tiên dạng số: 21/04/2026, 21.04.2026, 21-04-2026
     dm = _DATE_IN_QUERY_RE.search(query or "")
     if dm:
         d, mo, y = dm.group(1), dm.group(2), dm.group(3)
@@ -104,6 +130,20 @@ def parse_date_hints(query: str) -> dict[str, str]:
         hints["month"] = mo.zfill(2) if len(mo) < 2 else mo
         hints["year"] = y
         hints["file_date"] = f"ngay-{int(d)}-{int(mo)}-{y}"
+    else:
+        # Dạng chữ tiếng Việt: "ngày 21 tháng 4 năm 2026"
+        vi = _DATE_VI_RE.search(query or "")
+        if vi:
+            d, mo = vi.group(1), vi.group(2)
+            y = vi.group(3) or ""
+            hints["day"] = d.zfill(2) if len(d) < 2 else d
+            hints["month"] = mo.zfill(2) if len(mo) < 2 else mo
+            if y:
+                hints["year"] = y
+                hints["file_date"] = f"ngay-{int(d)}-{int(mo)}-{y}"
+            else:
+                hints["file_date"] = f"ngay-{int(d)}-{int(mo)}"
+
     thu = re.search(r"thứ\s*(\d)|thu\s*(\d)", q)
     if thu:
         hints["thu"] = thu.group(1) or thu.group(2)
@@ -323,6 +363,29 @@ def extract_exam_chunks_from_docs(docs: list[dict]) -> list[ExamListChunk]:
     return chunks_out
 
 
+def _find_rows_by_room(
+    chunks: list[ExamListChunk],
+    *,
+    room: str,
+    date_hints: dict[str, str] | None = None,
+) -> list[tuple[ExamListMeta, ExamListRow, str]]:
+    """Tìm tất cả thí sinh trong phòng thi chỉ định."""
+    hits: list[tuple[ExamListMeta, ExamListRow, str]] = []
+    room_norm = re.sub(r"\s+", "", room.lower())
+    dh = date_hints or {}
+    for ch in chunks:
+        for row in ch.rows:
+            row_room = re.sub(r"\s+", "", row.phong.lower())
+            if not row_room:
+                continue
+            if room_norm not in row_room and row_room not in room_norm:
+                continue
+            if dh and not row_matches_date_hint(row, dh):
+                continue
+            hits.append((ch.meta, row, ch.source))
+    return hits
+
+
 def _find_rows(
     chunks: list[ExamListChunk],
     *,
@@ -378,6 +441,45 @@ def _format_multi_exam_answer(
             lines.append(f"   - Ghi chú: {row.ghi_chu}")
         lines.append("")
     return "\n".join(lines).strip()
+
+
+def _format_room_answer(
+    room: str,
+    hits: list[tuple[ExamListMeta, ExamListRow, str]],
+    date_hints: dict[str, str],
+    source: str,
+) -> str:
+    """Liệt kê thí sinh trong phòng thi."""
+    date_s = ""
+    if date_hints.get("day") and date_hints.get("month"):
+        y = date_hints.get("year", "")
+        date_s = f" ngày {date_hints['day']}/{date_hints['month']}" + (f"/{y}" if y else "")
+    lines = [f"Phòng **{room}**{date_s} — **{len(hits)}** thí sinh:\n"]
+    for i, (meta, row, src) in enumerate(hits[:60], 1):
+        lines.append(
+            f"{i}. {row.ho_ten or '—'} — MSSV **{row.mssv or '—'}**, "
+            f"SBD {row.sbd or '—'}, ca {row.ca_thi or '—'}"
+        )
+    if len(hits) > 60:
+        lines.append(f"\n*(Còn {len(hits) - 60} thí sinh khác...)*")
+    if hits:
+        meta0 = hits[0][0]
+        if meta0.mon_thi:
+            lines.append(f"\n*Môn thi: {meta0.mon_thi}*")
+        if meta0.hinh_thuc:
+            lines.append(f"*Hình thức: {meta0.hinh_thuc}*")
+    return "\n".join(lines)
+
+
+def _format_multi_mssv_combined(
+    results: list[tuple[str, list[tuple[ExamListMeta, ExamListRow, str]]]],
+    date_hints: dict[str, str],
+) -> str:
+    """Kết quả tra nhiều MSSV cùng lúc."""
+    parts = []
+    for mssv, hits in results:
+        parts.append(_format_multi_exam_answer(hits, mssv, date_hints))
+    return "\n\n---\n\n".join(parts)
 
 
 def _format_student_answer(
@@ -481,7 +583,9 @@ def fetch_exam_list_docs(
 
     t0 = time.perf_counter()
     hints = parse_date_hints(query)
-    mssv = extract_mssv(query)
+    # Lấy tất cả MSSV trong câu hỏi; dùng MSSV đầu tiên để tìm file nguồn
+    all_mssv = extract_all_mssv(query)
+    mssv = all_mssv[0] if all_mssv else extract_mssv(query)
 
     if mssv:
         docs = retriever._lookup_mssv_chunks(mssv, agent_id, limit=200)
@@ -540,14 +644,43 @@ def build_exam_list_answer(
     docs: list[dict],
     source: str,
 ) -> str | None:
-    mssv = extract_mssv(question)
+    all_mssv = extract_all_mssv(question)
+    mssv = all_mssv[0] if all_mssv else None
     sbd = parse_sbd(question)
     date_hints = parse_date_hints(question)
+    room = _parse_room_from_query(question)
     chunks = extract_exam_chunks_from_docs(docs)
 
     if not chunks and not docs:
         return None
 
+    # --- Nhiều MSSV (≥ 2 trong câu hỏi) ---
+    if len(all_mssv) >= 2:
+        multi_results: list[tuple[str, list[tuple[ExamListMeta, ExamListRow, str]]]] = []
+        not_found: list[str] = []
+        for m in all_mssv:
+            hits = _find_rows(chunks, mssv=m, date_hints=date_hints)
+            if not hits and (date_hints.get("day") or date_hints.get("file_date")):
+                hits = _find_rows(chunks, mssv=m, date_hints={})
+            if hits:
+                multi_results.append((m, hits))
+            else:
+                not_found.append(m)
+        if multi_results:
+            ans = _format_multi_mssv_combined(multi_results, date_hints)
+            if not_found:
+                ans += f"\n\n*Không tìm thấy trong danh sách: **{', '.join(not_found)}**.*"
+            return ans
+        # Tất cả đều không tìm thấy → báo lỗi cho từng MSSV
+        date_note = ""
+        if date_hints.get("file_date"):
+            date_note = f" ngày {date_hints.get('day')}/{date_hints.get('month')}/{date_hints.get('year', '')}"
+        return (
+            f"Không tìm thấy các MSSV **{', '.join(all_mssv)}** trong danh sách thi{date_note}. "
+            f"File đã tra: `{source or '—'}`. Kiểm tra đúng ngày hoặc ingest `danh_sach_thi`."
+        )
+
+    # --- Một MSSV hoặc SBD ---
     if mssv or sbd:
         hits = _find_rows(chunks, mssv=mssv, sbd=sbd, date_hints=date_hints)
         if not hits and (date_hints.get("day") or date_hints.get("file_date")):
@@ -579,6 +712,20 @@ def build_exam_list_answer(
             )
         return "\n".join(lines)
 
+    # --- Tra theo phòng thi cụ thể ---
+    if room:
+        room_hits = _find_rows_by_room(chunks, room=room, date_hints=date_hints)
+        if not room_hits and date_hints:
+            room_hits = _find_rows_by_room(chunks, room=room, date_hints={})
+        if room_hits:
+            return _format_room_answer(room, room_hits, date_hints, source)
+        return (
+            f"Không tìm thấy danh sách thí sinh cho phòng **{room}** "
+            f"trong `{source or 'tài liệu đã tra'}`. "
+            "Thử kèm ngày thi (vd. 22/04/2026) hoặc kiểm tra tên phòng chính xác."
+        )
+
+    # --- Tổng hợp chung (không có ID cụ thể) ---
     merged_meta = ExamListMeta()
     total_rows = 0
     for ch in chunks:
@@ -589,7 +736,6 @@ def build_exam_list_answer(
         return None
 
     sample = chunks[0]
-    r0 = sample.rows[0] if sample.rows else ExamListRow()
     title = merged_meta.mon_thi or sample.meta.mon_thi or source
     lines = [
         f"**{title}** (`{source}`)",

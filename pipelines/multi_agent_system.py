@@ -8,7 +8,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 
 from config import AGENTS, AGENT_IDS, USE_KMA_TEXT_NORM
-from agents.supervisor import route as supervisor_route, RoutingDecision
+from agents.supervisor import route as supervisor_route, RoutingDecision, _grade_policy_compound_primary
+from agents.routing_intel import SUP_INTENT_MULTI
 from agents.aggregator import ResponseAggregator
 from agents.query_rewriter import rewrite
 from agents.planner import plan_questions, PlanResult
@@ -194,18 +195,47 @@ class MultiAgentSystem:
                 )
 
         return ExecutionPlan(
-            decision=RoutingDecision(
-                agents=list(agent_tasks.keys()),
-                primary=decision.primary,
-                reason=reason,
-                intent=decision.intent,
-                confidence=decision.confidence,
+            decision=self._finalize_decision(
+                decision, agent_tasks, ctx.retrieval_query, reason,
             ),
             agent_tasks=agent_tasks,
             sub_questions=plan.sub_questions,
             planner_used=plan.use_decomposition,
             planner_reason=plan.reason,
         )
+
+    @staticmethod
+    def _finalize_decision(
+        decision: RoutingDecision,
+        agent_tasks: dict[str, list[str]],
+        retrieval_query: str,
+        reason: str = "",
+    ) -> RoutingDecision:
+        """Đồng bộ agents/intent/primary khi planner tách nhiều mảng."""
+        merged_reason = reason or decision.reason
+        agents = list(agent_tasks.keys())
+        if len(agents) >= 2:
+            primary = decision.primary
+            if "diem_thi" in agents and "khao_thi" in agents:
+                primary = _grade_policy_compound_primary(retrieval_query)
+            elif primary not in agents:
+                primary = agents[0]
+            return RoutingDecision(
+                agents=agents,
+                primary=primary,
+                reason=merged_reason,
+                intent=SUP_INTENT_MULTI,
+                confidence=decision.confidence,
+            )
+        if agents:
+            return RoutingDecision(
+                agents=agents,
+                primary=decision.primary if decision.primary in agents else agents[0],
+                reason=merged_reason,
+                intent=decision.intent,
+                confidence=decision.confidence,
+            )
+        return decision
 
     def _combined_question(self, ctx: TurnContext, sub_qs: list[str]) -> str:
         if len(sub_qs) == 1:
@@ -216,10 +246,32 @@ class MultiAgentSystem:
             f"Trả lời đầy đủ các ý sau (dựa trên tài liệu KMA):\n{parts}"
         )
 
-    def _combined_retrieval_query(self, sub_qs: list[str]) -> str:
+    def _combined_retrieval_query(self, sub_qs: list[str], agent_id: str | None = None) -> str:
         """Một sub-q giữ nguyên; nhiều ý cùng agent → câu dài nhất (tránh embedding loãng)."""
         if len(sub_qs) == 1:
             return sub_qs[0]
+        if agent_id == "khao_thi":
+            policy_qs = [
+                q for q in sub_qs
+                if any(m in q.lower() for m in (
+                    "toeic", "vstep", "chuẩn ngoại ngữ", "chuan ngoai ngu",
+                    "quy chế", "quy che", "đồ án", "do an", "de tai do an",
+                ))
+            ]
+            if policy_qs:
+                return max(policy_qs, key=lambda s: len(s.split()))
+        if agent_id == "diem_thi":
+            grade_qs = [
+                q for q in sub_qs
+                if not any(m in q.lower() for m in (
+                    "toeic", "vstep", "chuẩn ngoại ngữ", "chuan ngoai ngu",
+                    "quy chế", "quy che",
+                )) or any(m in q.lower() for m in (
+                    "at", "ct", "dt", "phân loại", "phan loai", "kết quả", "ket qua",
+                ))
+            ]
+            if grade_qs:
+                return max(grade_qs, key=lambda s: len(s.split()))
         return max(sub_qs, key=lambda s: len(s.split()))
 
     def _complexity_query_for_agent(self, sub_qs: list[str], ctx: TurnContext) -> str:
@@ -239,7 +291,7 @@ class MultiAgentSystem:
             sub_qs = exe.agent_tasks.get(aid, [ctx.retrieval_query])
             kwargs = {
                 **sk_base,
-                "retrieval_query": self._combined_retrieval_query(sub_qs),
+                "retrieval_query": self._combined_retrieval_query(sub_qs, aid),
                 "complexity_query": self._complexity_query_for_agent(sub_qs, ctx),
                 "supervisor_intent": exe.decision.intent,
                 "supervisor_confidence": exe.decision.confidence,
@@ -620,7 +672,7 @@ class MultiAgentSystem:
             sk = {
                 "history": ctx.history,
                 "session_summary": ctx.session_summary,
-                "retrieval_query": self._combined_retrieval_query(sub_qs),
+                "retrieval_query": self._combined_retrieval_query(sub_qs, aid),
                 "complexity_query": self._complexity_query_for_agent(sub_qs, ctx),
                 "supervisor_intent": exe.decision.intent,
                 "supervisor_confidence": exe.decision.confidence,
@@ -683,7 +735,7 @@ class MultiAgentSystem:
             sk = {
                 "history": ctx.history,
                 "session_summary": ctx.session_summary,
-                "retrieval_query": self._combined_retrieval_query(sub_qs),
+                "retrieval_query": self._combined_retrieval_query(sub_qs, aid),
                 "complexity_query": self._complexity_query_for_agent(sub_qs, ctx),
                 "supervisor_intent": exe.decision.intent,
                 "supervisor_confidence": exe.decision.confidence,

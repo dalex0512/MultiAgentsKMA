@@ -46,6 +46,13 @@ _AGENT_ANSWER_RULES: dict[str, str] = {
         "\nKhi hỏi catalog/tên file biểu mẫu: ghi rõ tên file gốc (vd. 24-Mau_khai_BHYT_sv_ATTT.doc). "
         "Khi hỏi giấy tờ/phí nhập học: liệt kê đủ mục từ hướng dẫn Thu_tuc_nhap_hoc_2024."
     ),
+    "diem_thi": (
+        "\nKhi câu hỏi tra cứu điểm cá nhân nhưng KHÔNG có MSSV dạng ATxxxxxx/CTxxxxxx: "
+        "yêu cầu sinh viên cung cấp MSSV để tra cứu chính xác, ví dụ: "
+        "«Vui lòng cung cấp MSSV dạng ATxxxxxx hoặc CTxxxxxx để tra cứu điểm.»\n"
+        "Khi câu hỏi về tốt nghiệp CT4 hoặc kết quả Anh văn/chứng chỉ TA: "
+        "tra trong file 04_ket_qua_tot_nghiep_ct4, 08_ket_qua_thi_anh_van, 12_ds_nhan_chung_chi_ta."
+    ),
     "ma_tran": (
         "\nKhi tài liệu có dòng «Tổng số câu hỏi» / «Thời gian làm bài»: trích đúng số câu và số phút."
     ),
