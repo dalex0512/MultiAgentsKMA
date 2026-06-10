@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Slide 3</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    width: 1920px; height: 1080px; background: #fff;
+    font-family: 'Inter', 'Segoe UI', sans-serif; color: #1e293b;
+  }
+  .slide { padding: 44px 56px 32px; height: 1080px; display: flex; flex-direction: column; }
+
+  h1 { text-align: center; font-size: 32px; font-weight: 700; letter-spacing: -0.3px; }
+  .sub { text-align: center; font-size: 17px; color: #64748b; margin: 6px 0 18px; }
+  .banner {
+    background: linear-gradient(90deg, #eff6ff, #f0f9ff);
+    border: 1.5px solid #93c5fd; border-radius: 10px;
+    text-align: center; padding: 11px 20px; font-size: 16px; color: #1e40af; margin-bottom: 24px;
+  }
+
+  .main { flex: 1; display: grid; grid-template-columns: 240px 1fr 240px; gap: 20px; align-items: start; }
+
+  .aside { display: flex; flex-direction: column; gap: 14px; padding-top: 40px; }
+  .card {
+    background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px;
+    padding: 16px; font-size: 13px; line-height: 1.6; color: #475569;
+  }
+  .card b { display: block; font-size: 14px; color: #334155; margin-bottom: 6px; }
+  .card.red { background: #fef2f2; border-color: #fecaca; }
+  .card.red b { color: #991b1b; }
+
+  /* ── flow column ── */
+  .flow { display: flex; flex-direction: column; align-items: center; }
+
+  .node {
+    width: 340px; border-radius: 10px; padding: 13px 18px; text-align: center;
+    border: 2px solid; background: #fff;
+  }
+  .node .n { font-size: 16px; font-weight: 700; }
+  .node .d { font-size: 12.5px; color: #64748b; margin-top: 3px; }
+
+  .n-orange { background: #fff7ed; border-color: #f97316; }
+  .n-teal   { background: #f0fdfa; border-color: #14b8a6; }
+  .n-green  { background: #ecfdf5; border-color: #22c55e; }
+  .n-green .n { color: #15803d; font-size: 18px; }
+
+  .decision {
+    width: 200px; height: 68px; position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .decision svg { position: absolute; inset: 0; }
+  .decision span { position: relative; z-index: 1; font-size: 13.5px; font-weight: 700; text-align: center; line-height: 1.25; }
+
+  .arrow { width: 2px; height: 28px; background: #94a3b8; position: relative; }
+  .arrow::after {
+    content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    border: 5px solid transparent; border-top: 7px solid #94a3b8;
+  }
+  .arrow.g { background: #22c55e; }
+  .arrow.g::after { border-top-color: #22c55e; }
+
+  .tag { font-size: 12px; font-weight: 600; color: #16a34a; margin: 2px 0 2px 180px; width: 340px; text-align: right; padding-right: 40px; }
+
+  .grader-row {
+    display: flex; align-items: center; justify-content: center; gap: 20px; width: 100%;
+  }
+  .grader-row .node { width: 320px; }
+  .side-node {
+    width: 260px; border-radius: 10px; padding: 12px 14px; text-align: center;
+    background: #fff7ed; border: 2px solid #ea580c;
+  }
+  .side-node .n { font-size: 14px; font-weight: 700; }
+  .side-node .d { font-size: 11.5px; color: #64748b; margin-top: 3px; }
+  .no-tag { font-size: 11px; font-weight: 700; color: #ea580c; margin-top: 4px; }
+
+  .foot {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 18px;
+  }
+  .foot-l {
+    background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 18px 24px;
+  }
+  .foot-l h3 { font-size: 16px; font-weight: 700; text-align: center; margin-bottom: 12px; color: #334155; }
+  .foot-l ol { padding-left: 20px; font-size: 14px; line-height: 2; color: #475569; }
+
+  .foot-r {
+    background: #fef2f2; border: 2.5px solid #ef4444; border-radius: 12px;
+    padding: 18px 24px; text-align: center;
+  }
+  .foot-r h3 { font-size: 18px; font-weight: 700; color: #991b1b; margin-bottom: 8px; }
+  .foot-r p { font-size: 15px; color: #7f1d1d; margin-bottom: 6px; }
+  .foot-r small { font-size: 13px; font-weight: 700; color: #991b1b; }
+
+  .cap { text-align: center; font-size: 13px; color: #94a3b8; font-style: italic; margin-top: 12px; }
+  .warn { font-size: 12px; color: #dc2626; font-weight: 600; margin-top: 6px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <h1>Cơ chế kiểm định relevance và leo thang pipeline</h1>
+  <p class="sub">Routing động bổ sung cho routing tĩnh theo Q<sub>c</sub> (vùng Hybrid)</p>
+  <div class="banner">Tầng 1 — Routing tĩnh (a priori): Router chọn <b>Hybrid</b> khi 0,50 ≤ Q<sub>c</sub> &lt; 0,70</div>
+
+  <div class="main">
+    <div class="aside">
+      <div class="card">
+        <b>Nhánh rút gọn</b>
+        Q<sub>c</sub> ngoài [0,35; 0,65) → bỏ Grader, Generate trực tiếp.
+      </div>
+      <div class="card">
+        <b>Corrective RAG</b>
+        Grader = NO → LLM mở rộng query → retrieve lại (≤ 2 vòng).
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="node n-orange">
+        <div class="n">Retrieve(q)</div>
+        <div class="d">Embedding + rerank</div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="decision">
+        <svg viewBox="0 0 200 68"><polygon points="100,2 198,34 100,66 2,34" fill="#fefce8" stroke="#eab308" stroke-width="2.5"/></svg>
+        <span>Bật Grader?<br><small style="font-size:11px;color:#64748b">0,35 ≤ Q<sub>c</sub> &lt; 0,65</small></span>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="grader-row">
+        <div class="node n-orange">
+          <div class="n">Document Grader</div>
+          <div class="d">Grade(q, D) → YES / NO</div>
+        </div>
+        <div class="side-node">
+          <div class="n">Corrective Retrieve</div>
+          <div class="d">Requery + Retrieve (≤ 2 vòng)</div>
+          <div class="no-tag">← NO</div>
+        </div>
+      </div>
+      <div class="tag">YES ↓ &nbsp;|&nbsp; sau requery ↓</div>
+      <div class="arrow"></div>
+
+      <div class="decision">
+        <svg viewBox="0 0 200 68"><polygon points="100,2 198,34 100,66 2,34" fill="#fefce8" stroke="#eab308" stroke-width="2.5"/></svg>
+        <span>Đủ context?</span>
+      </div>
+      <div class="tag">Có ↓</div>
+      <div class="arrow g"></div>
+
+      <div class="node n-teal">
+        <div class="n">Generate</div>
+        <div class="d">LLM, temperature = 0</div>
+      </div>
+      <div class="arrow g"></div>
+
+      <div class="node n-green">
+        <div class="n">Kết quả</div>
+      </div>
+      <p class="warn">Không đủ context / trả lời thiếu → leo thang Agentic ↓</p>
+    </div>
+
+    <div class="aside">
+      <div class="card red">
+        <b>Leo thang (Tầng 2)</b>
+        Khi kiểm tra thất bại → chuyển sang Agentic RAG (Plan + Retrieve × N + Grade + Generate).
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="foot-l">
+      <h3>Điều kiện leo thang → Agentic</h3>
+      <ol>
+        <li>Grader trả về <b>NO</b> (sau requery)</li>
+        <li>Điểm retrieve thấp (conf &lt; 0,40)</li>
+        <li>Phản hồi thiếu thông tin</li>
+      </ol>
+    </div>
+    <div class="foot-r">
+      <h3>Leo thang → Agentic RAG</h3>
+      <p>Plan → Retrieve × N → Grade → Generate</p>
+      <small>Tầng 2 — Routing động (a posteriori)</small>
+    </div>
+  </div>
+  <p class="cap">Hình X. Cơ chế kiểm định relevance và leo thang pipeline (vùng Hybrid)</p>
+</div>
+</body>
+</html>

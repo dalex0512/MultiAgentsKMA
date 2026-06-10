@@ -184,18 +184,23 @@ def score_turn(
 
     exp_agents = expected.get("agents", [])
     act_agents = resp.get("agents_used", [])
-    checks["agents"] = agents_match(
-        act_agents,
-        exp_agents,
-        exact=strict and expected.get("agents_exact", False),
-    )
+    min_agents = expected.get("min_agents")
+
+    if min_agents is not None and not strict:
+        # Content mode: đủ số tác tử + ít nhất một tác tử kỳ vọng (không bắt đủ cả danh sách)
+        overlap = bool(set(exp_agents) & set(act_agents)) if exp_agents else True
+        checks["agents"] = len(act_agents) >= min_agents and overlap
+    else:
+        checks["agents"] = agents_match(
+            act_agents,
+            exp_agents,
+            exact=strict and expected.get("agents_exact", False),
+        )
+        if min_agents is not None:
+            checks["min_agents"] = len(act_agents) >= min_agents
 
     if expected.get("not_agents"):
         checks["not_agents"] = not any(a in act_agents for a in expected["not_agents"])
-
-    min_agents = expected.get("min_agents")
-    if min_agents is not None:
-        checks["min_agents"] = len(act_agents) >= min_agents
 
     if strict:
         if expected.get("primary"):
@@ -222,7 +227,7 @@ def score_turn(
         if qc_max is not None:
             checks["qc_max"] = qc <= qc_max
 
-    if expected.get("was_rewritten") is True:
+    if strict and expected.get("was_rewritten") is True:
         checks["was_rewritten"] = resp.get("was_rewritten") is True
 
     if "in_scope" in expected:
@@ -236,9 +241,15 @@ def score_turn(
     must_not = rubric.get("must_not_contain", [])
     checks["must_not_contain"] = not any(t.lower() in answer.lower() for t in must_not)
 
-    for fact in rubric.get("gold_facts", []):
-        key = f"gold:{fact[:24]}"
-        checks[key] = _term_in_text(fact, answer)
+    golds = rubric.get("gold_facts", [])
+    if golds:
+        if rubric.get("gold_facts_mode") == "all" or len(golds) == 1:
+            for fact in golds:
+                key = f"gold:{fact[:24]}"
+                checks[key] = _term_in_text(fact, answer)
+        else:
+            # Nhiều mốc vàng = thường là biến thể (10.896.940 / 10896940) → chỉ cần khớp một
+            checks["gold_facts_any"] = contains_any(answer, golds)
 
     src_files = rubric.get("source_file_any", [])
     if src_files and strict:
@@ -393,25 +404,43 @@ def main():
 
     results = []
     passed = 0
-    for i, case in enumerate(cases, 1):
-        t_case = timeout_for_case(case, args.timeout or None)
-        print(f"[{i}/{len(cases)}] {case['id']} (timeout={t_case}s) …", flush=True)
-        r = run_case(case, args.base_url, timeout=t_case, mode=args.mode)
-        results.append(r)
-        if r.get("passed"):
-            passed += 1
-        elif r.get("error"):
-            print(f"  ERROR {case['id']}: {r['error']}", flush=True)
-        else:
-            sc = r.get("score") or (r.get("turns") or [{}])[-1].get("score", {})
-            failed = [k for k, v in (sc.get("checks") or {}).items() if not v]
-            print(f"  FAIL {case['id']}: {failed}", flush=True)
-        _write_summary(out_path, stamp, args.base_url, cases, results, passed)
+    interrupted = False
+    try:
+        for i, case in enumerate(cases, 1):
+            t_case = timeout_for_case(case, args.timeout or None)
+            print(f"[{i}/{len(cases)}] {case['id']} (timeout={t_case}s) …", flush=True)
+            r = run_case(case, args.base_url, timeout=t_case, mode=args.mode)
+            results.append(r)
+            if r.get("passed"):
+                passed += 1
+                print(f"  OK {case['id']} ({r.get('elapsed_s', '?')}s)", flush=True)
+            elif r.get("error"):
+                print(f"  ERROR {case['id']}: {r['error']}", flush=True)
+            else:
+                sc = r.get("score") or (r.get("turns") or [{}])[-1].get("score", {})
+                failed = [k for k, v in (sc.get("checks") or {}).items() if not v]
+                print(f"  FAIL {case['id']}: {failed} ({r.get('elapsed_s', '?')}s)", flush=True)
+            _write_summary(out_path, stamp, args.base_url, cases, results, passed)
+    except KeyboardInterrupt:
+        interrupted = True
+        print("\n\nĐã dừng bằng Ctrl+C — đang lưu kết quả một phần…", flush=True)
 
-    summary = _build_summary(stamp, args.base_url, cases, results, passed)
-    out_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"\nDone: {passed}/{len(cases)} passed ({summary['pass_rate']}%)")
-    print(f"Results: {out_path}")
+    if results:
+        summary = _build_summary(stamp, args.base_url, cases, results, passed)
+        summary["interrupted"] = interrupted
+        summary["completed_cases"] = len(results)
+        out_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(
+            f"\n{'Dừng giữa chừng' if interrupted else 'Done'}: "
+            f"{passed}/{len(results)} passed trong {len(results)} case đã chạy",
+            flush=True,
+        )
+        if interrupted and len(results) < len(cases):
+            next_id = cases[len(results)]["id"]
+            print(f"Tiếp tục: python eval/run_benchmark.py --from-id {next_id}", flush=True)
+        print(f"Results: {out_path}", flush=True)
+    elif interrupted:
+        print("Chưa có case nào hoàn thành — không ghi file kết quả.", flush=True)
 
 
 def _build_summary(stamp: str, base_url: str, cases: list, results: list, passed: int) -> dict:

@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080"
+     font-family="'Segoe UI', Arial, sans-serif">
+
+  <rect width="1920" height="1080" fill="#FFFFFF"/>
+
+  <!-- ?? title ?? -->
+  <text x="960" y="72" text-anchor="middle" font-size="36" font-weight="700" fill="#1a1a1a">
+    C? ch? ki?m ð?nh relevance v? leo thang pipeline
+  </text>
+  <text x="960" y="112" text-anchor="middle" font-size="20" fill="#666666" font-style="italic">
+    Routing ð?ng b? sung cho routing t?nh theo Qc (v?ng Hybrid)
+  </text>
+
+  <!-- tier 1 -->
+  <rect x="120" y="140" width="1680" height="52" rx="10" fill="#EBF5FB" stroke="#2E86C1"
+        stroke-width="2" stroke-dasharray="8,5"/>
+  <text x="960" y="173" text-anchor="middle" font-size="20" fill="#1B4F72">
+    T?ng 1 ? Routing t?nh: Router ch?n Hybrid khi 0,50 ? Qc &lt; 0,70
+  </text>
+
+  <!-- ?? layout constants ?? -->
+  <!-- center column cx=960, box w=400 h=72, gap=100 -->
+
+  <!-- 1 Retrieve -->
+  <rect x="760" y="230" width="400" height="72" rx="14" fill="#FFF3E0" stroke="#E67E22" stroke-width="2.5"/>
+  <text x="960" y="262" text-anchor="middle" font-size="22" font-weight="600">Retrieve(q)</text>
+  <text x="960" y="288" text-anchor="middle" font-size="16" fill="#666">Embedding + rerank</text>
+
+  <!-- arrow 1 -->
+  <line x1="960" y1="302" x2="960" y2="338" stroke="#444" stroke-width="2.5" marker-end="url(#a)"/>
+
+  <!-- 2 diamond grader zone -->
+  <polygon points="960,350 1060,410 960,470 860,410" fill="#FFF9C4" stroke="#F39C12" stroke-width="2.5"/>
+  <text x="960" y="405" text-anchor="middle" font-size="18" font-weight="700">B?t Grader?</text>
+  <text x="960" y="428" text-anchor="middle" font-size="15" font-weight="700">(0,35 ? Qc &lt; 0,65)</text>
+
+  <!-- arrow 2 down YES -->
+  <line x1="960" y1="470" x2="960" y2="506" stroke="#444" stroke-width="2.5" marker-end="url(#a)"/>
+  <text x="990" y="495" font-size="16" fill="#27AE60" font-weight="700">Có</text>
+
+  <!-- skip left: direct generate -->
+  <line x1="868" y1="410" x2="520" y2="410" stroke="#888" stroke-width="2"/>
+  <line x1="520" y1="410" x2="520" y2="650" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+  <text x="680" y="400" font-size="16" fill="#888" font-weight="600">Không ? Generate tr?c ti?p</text>
+
+  <!-- 3 Grader -->
+  <rect x="760" y="518" width="400" height="72" rx="14" fill="#FFF3E0" stroke="#E67E22" stroke-width="2.5"/>
+  <text x="960" y="550" text-anchor="middle" font-size="22" font-weight="700">Document Grader</text>
+  <text x="960" y="576" text-anchor="middle" font-size="16" fill="#666">Grade(q, D) ? YES / NO</text>
+
+  <!-- NO ? corrective (right) -->
+  <line x1="1160" y1="554" x2="1280" y2="554" stroke="#D35400" stroke-width="2.5" marker-end="url(#ao)"/>
+  <text x="1210" y="544" text-anchor="middle" font-size="16" fill="#D35400" font-weight="700">NO</text>
+
+  <rect x="1280" y="518" width="380" height="72" rx="14" fill="#FFF3E0" stroke="#D35400" stroke-width="2.5"/>
+  <text x="1470" y="548" text-anchor="middle" font-size="20" font-weight="600">Corrective Retrieve</text>
+  <text x="1470" y="574" text-anchor="middle" font-size="15" fill="#666">Requery + Retrieve (? 2 v?ng)</text>
+
+  <!-- corrective back to diamond 2 -->
+  <line x1="1470" y1="590" x2="1470" y2="660" stroke="#D35400" stroke-width="2"/>
+  <line x1="1470" y1="660" x2="1060" y2="660" stroke="#D35400" stroke-width="2" marker-end="url(#ao)"/>
+
+  <!-- YES down -->
+  <line x1="960" y1="590" x2="960" y2="626" stroke="#444" stroke-width="2.5" marker-end="url(#a)"/>
+  <text x="990" y="618" font-size="16" fill="#27AE60" font-weight="700">YES</text>
+
+  <!-- 4 diamond context -->
+  <polygon points="960,638 1055,698 960,758 865,698" fill="#FFF9C4" stroke="#F39C12" stroke-width="2.5"/>
+  <text x="960" y="704" text-anchor="middle" font-size="18" font-weight="700">Ð? context?</text>
+
+  <!-- arrow to generate YES -->
+  <line x1="960" y1="758" x2="960" y2="794" stroke="#27AE60" stroke-width="2.5" marker-end="url(#ag)"/>
+  <text x="990" y="782" font-size="16" fill="#27AE60" font-weight="700">Có</text>
+
+  <!-- NO to agentic -->
+  <line x1="1060" y1="698" x2="1320" y2="698" stroke="#C0392B" stroke-width="2.5" stroke-dasharray="10,6"/>
+  <line x1="1320" y1="698" x2="1320" y2="860" stroke="#C0392B" stroke-width="2.5" stroke-dasharray="10,6" marker-end="url(#ar)"/>
+  <text x="1140" y="688" font-size="16" fill="#C0392B" font-weight="700">Không</text>
+
+  <!-- 5 Generate center -->
+  <rect x="760" y="806" width="400" height="68" rx="14" fill="#E8F8F5" stroke="#1ABC9C" stroke-width="2.5"/>
+  <text x="960" y="838" text-anchor="middle" font-size="22" font-weight="600">Generate</text>
+  <text x="960" y="862" text-anchor="middle" font-size="16" fill="#666">LLM, temperature = 0</text>
+
+  <!-- left generate (skip path) -->
+  <rect x="320" y="806" width="400" height="68" rx="14" fill="#E8F8F5" stroke="#1ABC9C" stroke-width="2.5"/>
+  <text x="520" y="838" text-anchor="middle" font-size="22" font-weight="600">Generate</text>
+  <text x="520" y="862" text-anchor="middle" font-size="16" fill="#666">LLM, temperature = 0</text>
+
+  <!-- arrow generate to result -->
+  <line x1="960" y1="874" x2="960" y2="910" stroke="#27AE60" stroke-width="2.5" marker-end="url(#ag)"/>
+  <line x1="520" y1="874" x2="520" y2="930" stroke="#27AE60" stroke-width="2.5"/>
+  <line x1="520" y1="930" x2="820" y2="930" stroke="#27AE60" stroke-width="2.5" marker-end="url(#ag)"/>
+
+  <!-- 6 Result -->
+  <rect x="760" y="922" width="400" height="68" rx="14" fill="#D5F5E3" stroke="#27AE60" stroke-width="2.5"/>
+  <text x="960" y="962" text-anchor="middle" font-size="24" font-weight="700" fill="#1E8449">K?t qu?</text>
+
+  <!-- ?? bottom left: conditions ?? -->
+  <rect x="120" y="860" width="560" height="150" rx="14" fill="#F4F6F7" stroke="#BDC3C7" stroke-width="2"/>
+  <text x="400" y="898" text-anchor="middle" font-size="20" font-weight="700" fill="#2C3E50">
+    Ði?u ki?n leo thang ? Agentic
+  </text>
+  <text x="150" y="936" font-size="17" fill="#34495E">? Grader tr? v? NO (sau requery)</text>
+  <text x="150" y="968" font-size="17" fill="#34495E">? Ði?m retrieve th?p (conf &lt; 0,40)</text>
+  <text x="150" y="1000" font-size="17" fill="#34495E">? Ph?n h?i thi?u thông tin</text>
+
+  <!-- ?? bottom right: agentic ?? -->
+  <rect x="1180" y="860" width="620" height="150" rx="14" fill="#FDEDEC" stroke="#C0392B" stroke-width="3"/>
+  <text x="1490" y="905" text-anchor="middle" font-size="24" font-weight="700" fill="#922B21">
+    Leo thang ? Agentic RAG
+  </text>
+  <text x="1490" y="945" text-anchor="middle" font-size="19" fill="#641E16">
+    Plan ? Retrieve × N ? Grade ? Generate
+  </text>
+  <text x="1490" y="982" text-anchor="middle" font-size="16" font-weight="700" fill="#922B21">
+    T?ng 2 ? Routing ð?ng (a posteriori)
+  </text>
+
+  <!-- skip path fail to agentic -->
+  <line x1="520" y1="806" x2="520" y2="780" stroke="#C0392B" stroke-width="2" stroke-dasharray="10,6"/>
+  <line x1="520" y1="780" x2="1180" y2="780" stroke="#C0392B" stroke-width="2" stroke-dasharray="10,6"/>
+  <line x1="1180" y1="780" x2="1180" y2="860" stroke="#C0392B" stroke-width="2" stroke-dasharray="10,6" marker-end="url(#ar)"/>
+  <text x="850" y="770" font-size="15" fill="#C0392B" font-weight="600">Tr? l?i thi?u ? leo thang</text>
+
+  <!-- caption -->
+  <text x="960" y="1060" text-anchor="middle" font-size="16" fill="#999" font-style="italic">
+    H?nh X. C? ch? ki?m ð?nh relevance v? leo thang pipeline (v?ng Hybrid)
+  </text>
+
+  <!-- arrow markers -->
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <polygon points="0 0,10 4,0 8" fill="#444"/>
+    </marker>
+    <marker id="ao" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <polygon points="0 0,10 4,0 8" fill="#D35400"/>
+    </marker>
+    <marker id="ag" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <polygon points="0 0,10 4,0 8" fill="#27AE60"/>
+    </marker>
+    <marker id="ar" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <polygon points="0 0,10 4,0 8" fill="#C0392B"/>
+    </marker>
+  </defs>
+</svg>

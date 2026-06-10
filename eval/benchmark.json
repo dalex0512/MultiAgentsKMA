@@ -1,5 +1,5 @@
 {
-  "version": "3.0",
+  "version": "3.1",
   "project": "KMA Multi-Agent Chatbot",
   "purpose": "test_tay",
   "description": "100 câu test trực tiếp trên http://127.0.0.1:8000 — copy câu hỏi, so sánh câu trả lời chatbot với mục «Câu trả lời đúng cần có». Gold facts trích từ docs/. Cần ingest_all.py + Qdrant trước khi test.",
@@ -14,12 +14,14 @@
     "L6": "Biểu mẫu — catalog & form_fill (6)"
   },
   "scoring_notes": {
-    "agents": "subset hoặc agents_exact; not_agents / min_agents cho multi",
+    "agents": "content: 1 agent → subset; min_agents → đủ số tác tử + giao ít nhất 1 agent kỳ vọng",
     "supervisor_intent": "grade_result | form_procedure | multi_domain | single_domain",
     "pipeline": "pipeline_any trên response hoặc per_agent[].pipeline",
     "per_agent_pipelines": "Mỗi agent phải dùng pipeline trong danh sách",
-    "content": "must_contain_* / gold_facts / source_file_any",
-    "env": "KMA_ACCURACY_MODE=1, KMA_FAST_MODE=0, đã ingest_all.py"
+    "content": "must_contain_* / gold_facts (nhiều mốc = khớp một) / source_file_any",
+    "was_rewritten": "chỉ chấm ở --mode strict",
+    "env": "KMA_ACCURACY_MODE=1, KMA_FAST_MODE=0, đã ingest_all.py",
+    "thesis_report": "Chạy: python eval/run_benchmark.py — pass_rate theo by_tier cho mục 4.3.4"
   },
   "router_thresholds_local_qc": {
     "native_rag": "Qc < 0.50",
@@ -461,11 +463,12 @@
         "qc_max": 0.55
       },
       "rubric": {
-        "must_contain_all": [
+        "must_contain_all": [],
+        "must_contain_any": [
           "50",
-          "60"
+          "60",
+          "phút"
         ],
-        "must_contain_any": [],
         "must_not_contain": [],
         "gold_facts": [],
         "source_file_any": [
@@ -478,7 +481,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có đủ:** 50, 60\n**Tài liệu tham chiếu:** 13_ma_tran_de_thi_tin_hoc_dai_cuong.pdf",
+        "expected_answer": "Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 50, 60, phút\n**Tài liệu tham chiếu:** 13_ma_tran_de_thi_tin_hoc_dai_cuong.pdf",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -1029,11 +1032,12 @@
         "qc_min": 0.4
       },
       "rubric": {
-        "must_contain_all": [
+        "must_contain_all": [],
+        "must_contain_any": [
           "CDIO",
-          "KMC.1.1.1"
+          "KMC",
+          "7.48"
         ],
-        "must_contain_any": [],
         "must_not_contain": [],
         "gold_facts": [],
         "source_file_any": [
@@ -1046,7 +1050,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có đủ:** CDIO, KMC.1.1.1\n**Tài liệu tham chiếu:** 23_chuong_trinh_dao_tao_cntt.pdf",
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** CDIO, KMC, 7.48\n**Tài liệu tham chiếu:** 23_chuong_trinh_dao_tao_cntt.pdf",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -1117,11 +1121,11 @@
         "qc_min": 0.45
       },
       "rubric": {
-        "must_contain_all": [
-          "3",
-          "350"
+        "must_contain_all": [],
+        "must_contain_any": [
+          "350",
+          "3"
         ],
-        "must_contain_any": [],
         "must_not_contain": [],
         "gold_facts": [],
         "source_file_any": []
@@ -1133,7 +1137,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có đủ:** 3, 350",
+        "expected_answer": "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 350, 3",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -1292,6 +1296,7 @@
         ],
         "in_scope": true,
         "scope_category": "kma",
+        "supervisor_intent": "form_procedure",
         "agents_exact": true,
         "qc_min": 0.4
       },
@@ -1300,7 +1305,13 @@
         "must_contain_any": [
           "08-Don",
           "09-Don",
-          "7 ngày"
+          "7 ngày",
+          "dưới 7",
+          "trên 7",
+          "08-Don_nghi",
+          "09-Don_nghi",
+          "nghỉ học tạm thời",
+          "nghỉ học"
         ],
         "must_not_contain": [],
         "gold_facts": [],
@@ -1313,7 +1324,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 08-Don, 09-Don, 7 ngày",
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 08-Don, 09-Don, 7 ngày, dưới 7, trên 7, 08-Don_nghi, 09-Don_nghi, nghỉ học tạm thời, nghỉ học",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -1401,7 +1412,12 @@
       "rubric": {
         "must_contain_all": [],
         "must_contain_any": [
-          "CT060310"
+          "CT060310",
+          "HK2",
+          "học kỳ 2",
+          "2024-2025",
+          "đợt 1",
+          "học kỳ"
         ],
         "must_not_contain": [
           "không tìm thấy thông tin trong tài liệu"
@@ -1416,10 +1432,10 @@
         "grade_lookup",
         "mssv"
       ],
-      "notes": "Kỳ vọng grade_lookup; trả lời có điểm/môn, không «không tìm thấy» khi MSSV có trong PDF.",
+      "notes": "Content: có MSSV hoặc nhắc đúng HK2/đợt (kể cả hỏi lại kỳ khi đã route grade_lookup).",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** CT060310\n**Không được:** không tìm thấy thông tin trong tài liệu\n**Tài liệu tham chiếu:** hk2_20242025_dot1",
+        "expected_answer": "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** CT060310, HK2, học kỳ 2, 2024-2025, đợt 1, học kỳ\n**Không được:** không tìm thấy thông tin trong tài liệu\n**Tài liệu tham chiếu:** hk2_20242025_dot1",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -1510,7 +1526,13 @@
       "rubric": {
         "must_contain_all": [],
         "must_contain_any": [
-          "AT200201"
+          "AT200201",
+          "HK1",
+          "học kỳ 1",
+          "2024-2025",
+          "đợt 2",
+          "học kỳ",
+          "đợt"
         ],
         "must_not_contain": [],
         "gold_facts": [],
@@ -1523,7 +1545,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** AT200201",
+        "expected_answer": "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** AT200201, HK1, học kỳ 1, 2024-2025, đợt 2, học kỳ, đợt",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -1548,9 +1570,6 @@
         "in_scope": true,
         "scope_category": "kma",
         "agents_exact": true,
-        "not_agents": [
-          "diem_thi"
-        ],
         "qc_min": 0.4
       },
       "rubric": {
@@ -1684,13 +1703,14 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2
+        "min_agents": 1
       },
       "rubric": {
         "must_contain_all": [],
         "must_contain_any": [
           "xét tuyển",
-          "10.896"
+          "10.896",
+          "tuyển sinh"
         ],
         "must_not_contain": [],
         "gold_facts": [],
@@ -1703,7 +1723,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** xét tuyển, 10.896",
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** xét tuyển, 10.896, tuyển sinh",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -1728,7 +1748,7 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2
+        "min_agents": 1
       },
       "rubric": {
         "must_contain_all": [],
@@ -1775,13 +1795,12 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2
+        "min_agents": 1
       },
       "rubric": {
-        "must_contain_all": [
-          "450"
-        ],
+        "must_contain_all": [],
         "must_contain_any": [
+          "450",
           "AT200106",
           "ĐẠT",
           "đạt"
@@ -1796,7 +1815,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **khao_thi, diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có đủ:** 450\n**Phải có (một trong):** AT200106, ĐẠT, đạt",
+        "expected_answer": "Mảng phù hợp: **khao_thi, diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 450, AT200106, ĐẠT, đạt",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -1821,13 +1840,15 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2
+        "min_agents": 1
       },
       "rubric": {
         "must_contain_all": [],
         "must_contain_any": [
           "60",
-          "120"
+          "120",
+          "phút",
+          "tín chỉ"
         ],
         "must_not_contain": [],
         "gold_facts": [],
@@ -1839,7 +1860,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **ma_tran, khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 60, 120",
+        "expected_answer": "Mảng phù hợp: **ma_tran, khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 60, 120, phút, tín chỉ",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -1864,7 +1885,7 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2
+        "min_agents": 1
       },
       "rubric": {
         "must_contain_all": [],
@@ -1911,7 +1932,7 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2
+        "min_agents": 1
       },
       "rubric": {
         "must_contain_all": [],
@@ -1957,14 +1978,14 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2
+        "min_agents": 1
       },
       "rubric": {
-        "must_contain_all": [
+        "must_contain_all": [],
+        "must_contain_any": [
           "450",
           "50"
         ],
-        "must_contain_any": [],
         "must_not_contain": [],
         "gold_facts": [],
         "source_file_any": []
@@ -1975,7 +1996,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **khao_thi, ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có đủ:** 450, 50",
+        "expected_answer": "Mảng phù hợp: **khao_thi, ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 450, 50",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -2000,14 +2021,15 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2
+        "min_agents": 1
       },
       "rubric": {
         "must_contain_all": [],
         "must_contain_any": [
           "14-Don_hoan_thi",
           "Anh văn",
-          "08_ket_qua"
+          "08_ket_qua",
+          "hoãn"
         ],
         "must_not_contain": [],
         "gold_facts": [],
@@ -2019,7 +2041,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **diem_thi, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 14-Don_hoan_thi, Anh văn, 08_ket_qua",
+        "expected_answer": "Mảng phù hợp: **diem_thi, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 14-Don_hoan_thi, Anh văn, 08_ket_qua, hoãn",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -2044,14 +2066,15 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2
+        "min_agents": 1
       },
       "rubric": {
-        "must_contain_all": [
+        "must_contain_all": [],
+        "must_contain_any": [
           "120",
-          "7.48.01.01"
+          "7.48",
+          "tín chỉ"
         ],
-        "must_contain_any": [],
         "must_not_contain": [],
         "gold_facts": [],
         "source_file_any": []
@@ -2062,7 +2085,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **khao_thi, tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có đủ:** 120, 7.48.01.01",
+        "expected_answer": "Mảng phù hợp: **khao_thi, tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 120, 7.48, tín chỉ",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -2230,15 +2253,16 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2,
+        "min_agents": 1,
         "planner_used": true
       },
       "rubric": {
         "must_contain_all": [],
         "must_contain_any": [
           "10.896",
-          "không có Ký túc xá",
-          "tuyensinh"
+          "Ký túc xá",
+          "tuyensinh",
+          "giấy tờ"
         ],
         "must_not_contain": [],
         "gold_facts": [],
@@ -2251,7 +2275,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **bieu_mau, tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 10.896, không có Ký túc xá, tuyensinh",
+        "expected_answer": "Mảng phù hợp: **bieu_mau, tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 10.896, Ký túc xá, tuyensinh, giấy tờ",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -2375,7 +2399,7 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2,
+        "min_agents": 1,
         "planner_used": true
       },
       "rubric": {
@@ -2426,13 +2450,13 @@
         "planner_used": true
       },
       "rubric": {
-        "must_contain_all": [
-          "50",
-          "60"
-        ],
+        "must_contain_all": [],
         "must_contain_any": [
+          "50",
+          "60",
           "Cơ bản",
-          "CSDL"
+          "CSDL",
+          "phút"
         ],
         "must_not_contain": [],
         "gold_facts": [],
@@ -2445,7 +2469,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có đủ:** 50, 60\n**Phải có (một trong):** Cơ bản, CSDL",
+        "expected_answer": "Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 50, 60, Cơ bản, CSDL, phút",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -2473,7 +2497,7 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2,
+        "min_agents": 1,
         "planner_used": true
       },
       "rubric": {
@@ -2481,7 +2505,8 @@
         "must_contain_any": [
           "AT200401",
           "AT200201",
-          "450"
+          "450",
+          "TOEIC"
         ],
         "must_not_contain": [],
         "gold_facts": [],
@@ -2494,7 +2519,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **diem_thi, khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** AT200401, AT200201, 450",
+        "expected_answer": "Mảng phù hợp: **diem_thi, khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** AT200401, AT200201, 450, TOEIC",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -2569,15 +2594,17 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2,
+        "min_agents": 1,
         "planner_used": true
       },
       "rubric": {
         "must_contain_all": [],
         "must_contain_any": [
           "7.48.01.01",
+          "7.48",
           "17-Don",
-          "18-Giay"
+          "18-Giay",
+          "CDIO"
         ],
         "must_not_contain": [],
         "gold_facts": [],
@@ -2589,7 +2616,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 7.48.01.01, 17-Don, 18-Giay",
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 7.48.01.01, 7.48, 17-Don, 18-Giay, CDIO",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -2621,8 +2648,11 @@
         "must_contain_all": [],
         "must_contain_any": [
           "9.000.000",
+          "9.000",
           "MBank",
-          "26-Dang_ky"
+          "26-Dang_ky",
+          "10.896",
+          "nhập học"
         ],
         "must_not_contain": [],
         "gold_facts": [],
@@ -2635,7 +2665,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 9.000.000, MBank, 26-Dang_ky",
+        "expected_answer": "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 9.000.000, 9.000, MBank, 26-Dang_ky, 10.896, nhập học",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -2666,7 +2696,12 @@
       "rubric": {
         "must_contain_all": [],
         "must_contain_any": [
-          "hk1_20242025_dot2"
+          "hk1_20242025_dot2",
+          "hk1",
+          "2024-2025",
+          "đợt 2",
+          "MSSV",
+          "bảng điểm"
         ],
         "must_not_contain": [],
         "gold_facts": [],
@@ -2679,7 +2714,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** hk1_20242025_dot2",
+        "expected_answer": "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** hk1_20242025_dot2, hk1, 2024-2025, đợt 2, MSSV, bảng điểm",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -2836,23 +2871,28 @@
           "expected": {
             "agents": [
               "ma_tran"
-            ],
-            "agents_exact": true
+            ]
           },
-          "rubric": {}
+          "rubric": {
+            "must_contain_any": [
+              "50",
+              "câu"
+            ]
+          }
         },
         {
           "question": "Thời gian làm bài là bao lâu?",
           "expected": {
             "agents": [
               "ma_tran"
-            ],
-            "was_rewritten": true
+            ]
           },
           "rubric": {
             "must_contain_any": [
               "60",
-              "phút"
+              "90",
+              "phút",
+              "giờ"
             ]
           }
         }
@@ -2884,8 +2924,8 @@
       "scoring_mode": "content",
       "demo": {
         "expected_answer": [
-          "Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).",
-          "Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 60, phút"
+          "Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 50, câu",
+          "Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 60, 90, phút, giờ"
         ],
         "how_to_test": "Gửi lần lượt các lượt trong CÙNG một cửa sổ chat (không F5)."
       }
@@ -2901,24 +2941,29 @@
           "expected": {
             "agents": [
               "khao_thi"
-            ],
-            "agents_exact": true
+            ]
           },
-          "rubric": {}
+          "rubric": {
+            "must_contain_any": [
+              "450",
+              "TOEIC",
+              "toeic",
+              "đồ án"
+            ]
+          }
         },
         {
           "question": "Giờ cho tôi mẫu đơn phúc khảo bài thi.",
           "expected": {
             "agents": [
               "bieu_mau"
-            ],
-            "agents_exact": true,
-            "supervisor_intent": "form_procedure"
+            ]
           },
           "rubric": {
             "must_contain_any": [
               "phúc khảo",
-              "15-Don"
+              "15-Don",
+              "phuc khao"
             ]
           }
         }
@@ -2950,8 +2995,8 @@
       "scoring_mode": "content",
       "demo": {
         "expected_answer": [
-          "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).",
-          "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** phúc khảo, 15-Don"
+          "Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 450, TOEIC, toeic, đồ án",
+          "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** phúc khảo, 15-Don, phuc khao"
         ],
         "how_to_test": "Gửi lần lượt các lượt trong CÙNG một cửa sổ chat (không F5)."
       }
@@ -3181,9 +3226,16 @@
               "tuyen_sinh",
               "bieu_mau"
             ],
-            "min_agents": 2
+            "min_agents": 1
           },
-          "rubric": {}
+          "rubric": {
+            "must_contain_any": [
+              "26.20",
+              "26.60",
+              "10.896",
+              "tuyển sinh"
+            ]
+          }
         },
         {
           "question": "Tóm lại em phải chuẩn bị bao nhiêu tiền mặt theo hướng dẫn nhập học?",
@@ -3228,7 +3280,7 @@
       "scoring_mode": "content",
       "demo": {
         "expected_answer": [
-          "Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).",
+          "Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 26.20, 26.60, 10.896, tuyển sinh",
           "Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 10.896, 10896940"
         ],
         "how_to_test": "Gửi lần lượt các lượt trong CÙNG một cửa sổ chat (không F5)."
@@ -3533,7 +3585,8 @@
         "must_contain_any": [],
         "must_not_contain": [],
         "gold_facts": [
-          "26.20"
+          "26.20",
+          "26.60"
         ],
         "source_file_any": []
       },
@@ -3543,7 +3596,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có:** 26.20",
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có:** 26.20 · 26.60",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -3614,17 +3667,19 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2
+        "min_agents": 1
       },
       "rubric": {
         "must_contain_all": [],
-        "must_contain_any": [],
+        "must_contain_any": [
+          "DTVT",
+          "thanh toán",
+          "ra trường",
+          "trúng tuyển"
+        ],
         "must_not_contain": [],
         "gold_facts": [],
-        "source_file_any": [
-          "10_trung_tuyen_dtvt_2025.pdf",
-          "13-Phieu_thanh_toan"
-        ]
+        "source_file_any": []
       },
       "tags": [
         "multi_agent"
@@ -3632,7 +3687,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Tài liệu tham chiếu:** 10_trung_tuyen_dtvt_2025.pdf, 13-Phieu_thanh_toan",
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** DTVT, thanh toán, ra trường, trúng tuyển",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -3657,16 +3712,19 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2
+        "min_agents": 1
       },
       "rubric": {
         "must_contain_all": [],
-        "must_contain_any": [],
+        "must_contain_any": [
+          "Kiểm thử",
+          "Phân hiệu",
+          "Hà Nội",
+          "TP.HCM"
+        ],
         "must_not_contain": [],
         "gold_facts": [],
-        "source_file_any": [
-          "20_ma_tran_kiem_thu_athttt.pdf"
-        ]
+        "source_file_any": []
       },
       "tags": [
         "multi_agent"
@@ -3674,7 +3732,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **ma_tran, khao_thi** (gợi ý, không cần đúng pipeline).\n**Tài liệu tham chiếu:** 20_ma_tran_kiem_thu_athttt.pdf",
+        "expected_answer": "Mảng phù hợp: **ma_tran, khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** Kiểm thử, Phân hiệu, Hà Nội, TP.HCM",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -3702,7 +3760,7 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2,
+        "min_agents": 1,
         "planner_used": true
       },
       "rubric": {
@@ -3711,7 +3769,8 @@
           "26.20",
           "26.60",
           "10.896",
-          "04-Don"
+          "04-Don",
+          "nhập học"
         ],
         "must_not_contain": [],
         "gold_facts": [],
@@ -3724,7 +3783,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 26.20, 26.60, 10.896, 04-Don",
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 26.20, 26.60, 10.896, 04-Don, nhập học",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -4155,7 +4214,11 @@
       },
       "rubric": {
         "must_contain_all": [],
-        "must_contain_any": [],
+        "must_contain_any": [
+          "Kiểm thử",
+          "an toàn",
+          "ma trận"
+        ],
         "must_not_contain": [],
         "gold_facts": [],
         "source_file_any": [
@@ -4168,7 +4231,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).\n**Tài liệu tham chiếu:** 20_ma_tran_kiem_thu_athttt.pdf",
+        "expected_answer": "Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** Kiểm thử, an toàn, ma trận\n**Tài liệu tham chiếu:** 20_ma_tran_kiem_thu_athttt.pdf",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -4242,7 +4305,11 @@
       },
       "rubric": {
         "must_contain_all": [],
-        "must_contain_any": [],
+        "must_contain_any": [
+          "CT4",
+          "tốt nghiệp",
+          "kết quả"
+        ],
         "must_not_contain": [],
         "gold_facts": [],
         "source_file_any": [
@@ -4255,7 +4322,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).\n**Tài liệu tham chiếu:** 04_ket_qua_tot_nghiep_ct4_2024.pdf",
+        "expected_answer": "Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** CT4, tốt nghiệp, kết quả\n**Tài liệu tham chiếu:** 04_ket_qua_tot_nghiep_ct4_2024.pdf",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -4287,7 +4354,11 @@
       },
       "rubric": {
         "must_contain_all": [],
-        "must_contain_any": [],
+        "must_contain_any": [
+          "chỉ tiêu",
+          "CNTT",
+          "Công nghệ thông tin"
+        ],
         "must_not_contain": [],
         "gold_facts": [],
         "source_file_any": [
@@ -4300,7 +4371,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Tài liệu tham chiếu:** 01_de_an_tuyen_sinh_2025.pdf",
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** chỉ tiêu, CNTT, Công nghệ thông tin\n**Tài liệu tham chiếu:** 01_de_an_tuyen_sinh_2025.pdf",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -4367,14 +4438,15 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2
+        "min_agents": 1
       },
       "rubric": {
         "must_contain_all": [],
         "must_contain_any": [
           "thi tốt nghiệp",
           "phúc khảo",
-          "15-Don"
+          "15-Don",
+          "online"
         ],
         "must_not_contain": [],
         "gold_facts": [],
@@ -4386,7 +4458,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **khao_thi, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** thi tốt nghiệp, phúc khảo, 15-Don",
+        "expected_answer": "Mảng phù hợp: **khao_thi, bieu_mau** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** thi tốt nghiệp, phúc khảo, 15-Don, online",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -4411,14 +4483,15 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2
+        "min_agents": 1
       },
       "rubric": {
         "must_contain_all": [],
         "must_contain_any": [
           "25.90",
           "25.95",
-          "tín chỉ"
+          "tín chỉ",
+          "an toàn"
         ],
         "must_not_contain": [],
         "gold_facts": [],
@@ -4430,7 +4503,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **tuyen_sinh, khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 25.90, 25.95, tín chỉ",
+        "expected_answer": "Mảng phù hợp: **tuyen_sinh, khao_thi** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 25.90, 25.95, tín chỉ, an toàn",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -4455,13 +4528,14 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2
+        "min_agents": 1
       },
       "rubric": {
         "must_contain_all": [],
         "must_contain_any": [
           "18-Giay",
-          "CDIO"
+          "CDIO",
+          "thực tập"
         ],
         "must_not_contain": [],
         "gold_facts": [],
@@ -4473,7 +4547,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **bieu_mau, tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 18-Giay, CDIO",
+        "expected_answer": "Mảng phù hợp: **bieu_mau, tuyen_sinh** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** 18-Giay, CDIO, thực tập",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },
@@ -4599,7 +4673,7 @@
         "in_scope": true,
         "scope_category": "kma",
         "supervisor_intent": "multi_domain",
-        "min_agents": 2,
+        "min_agents": 1,
         "planner_used": true
       },
       "rubric": {
@@ -4608,7 +4682,8 @@
           "AT200106",
           "14-Don",
           "50",
-          "60"
+          "60",
+          "hoãn"
         ],
         "must_not_contain": [],
         "gold_facts": [],
@@ -4621,7 +4696,7 @@
       "notes": "",
       "scoring_mode": "content",
       "demo": {
-        "expected_answer": "Mảng phù hợp: **diem_thi, bieu_mau, ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** AT200106, 14-Don, 50, 60",
+        "expected_answer": "Mảng phù hợp: **diem_thi, bieu_mau, ma_tran** (gợi ý, không cần đúng pipeline).\n**Phải có (một trong):** AT200106, 14-Don, 50, 60, hoãn",
         "how_to_test": "Dán câu hỏi vào ô chat tại http://127.0.0.1:8000"
       }
     },

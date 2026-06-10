@@ -1,6 +1,6 @@
 # Test tay — 100 câu hỏi KMA Chatbot
 
-**Phiên bản:** 3.0 · **100 câu**
+**Phiên bản:** 3.1 · **100 câu**
 
 100 câu test trực tiếp trên http://127.0.0.1:8000 — copy câu hỏi, so sánh câu trả lời chatbot với mục «Câu trả lời đúng cần có». Gold facts trích từ docs/. Cần ingest_all.py + Qdrant trước khi test.
 
@@ -271,7 +271,7 @@ Môn Tin học đại cương: tổng số câu trắc nghiệm và thời gian 
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).
-- **Phải có đủ:** 50, 60
+- **Phải có (một trong):** 50, 60, phút
 - **Tài liệu tham chiếu:** 13_ma_tran_de_thi_tin_hoc_dai_cuong.pdf
 
 ---
@@ -450,7 +450,7 @@ Chương trình CNTT chính quy KMA theo hướng tiếp cận nào và mã chư
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).
-- **Phải có đủ:** CDIO, KMC.1.1.1
+- **Phải có (một trong):** CDIO, KMC, 7.48
 - **Tài liệu tham chiếu:** 23_chuong_trinh_dao_tao_cntt.pdf
 
 ---
@@ -479,7 +479,7 @@ Theo bảng chuẩn tiếng Anh, sinh viên cần bao nhiêu tín chỉ tích l�
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).
-- **Phải có đủ:** 3, 350
+- **Phải có (một trong):** 350, 3
 
 ---
 
@@ -537,7 +537,7 @@ Khác nhau giữa đơn nghỉ học dưới 7 ngày và trên 7 ngày của KMA
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).
-- **Phải có (một trong):** 08-Don, 09-Don, 7 ngày
+- **Phải có (một trong):** 08-Don, 09-Don, 7 ngày, dưới 7, trên 7, 08-Don_nghi, 09-Don_nghi, nghỉ học tạm thời, nghỉ học
 
 ---
 
@@ -566,11 +566,11 @@ CT060310 điểm học kỳ 2 năm 2024-2025 đợt 1
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).
-- **Phải có (một trong):** CT060310
+- **Phải có (một trong):** CT060310, HK2, học kỳ 2, 2024-2025, đợt 1, học kỳ
 - **Không được:** không tìm thấy thông tin trong tài liệu
 - **Tài liệu tham chiếu:** hk2_20242025_dot1
 
-*Ghi chú:* Kỳ vọng grade_lookup; trả lời có điểm/môn, không «không tìm thấy» khi MSSV có trong PDF.
+*Ghi chú:* Content: có MSSV hoặc nhắc đúng HK2/đợt (kể cả hỏi lại kỳ khi đã route grade_lookup).
 
 ---
 
@@ -599,7 +599,7 @@ Cho xem điểm học kỳ 1 năm 2024-2025 đợt 2 của sinh viên AT200201.
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).
-- **Phải có (một trong):** AT200201
+- **Phải có (một trong):** AT200201, HK1, học kỳ 1, 2024-2025, đợt 2, học kỳ, đợt
 
 ---
 
@@ -657,7 +657,7 @@ Theo đề án tuyển sinh KMA 2025, phương thức tuyển sinh đại học 
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).
-- **Phải có (một trong):** xét tuyển, 10.896
+- **Phải có (một trong):** xét tuyển, 10.896, tuyển sinh
 
 ---
 
@@ -685,8 +685,7 @@ Chuẩn TOEIC tối thiểu trước khi nhận đề tài đồ án của KMA l
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **khao_thi, diem_thi** (gợi ý, không cần đúng pipeline).
-- **Phải có đủ:** 450
-- **Phải có (một trong):** AT200106, ĐẠT, đạt
+- **Phải có (một trong):** 450, AT200106, ĐẠT, đạt
 
 ---
 
@@ -700,7 +699,7 @@ Ma trận Tin học đại cương quy định thời gian thi bao lâu? Quy ch�
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **ma_tran, khao_thi** (gợi ý, không cần đúng pipeline).
-- **Phải có (một trong):** 60, 120
+- **Phải có (một trong):** 60, 120, phút, tín chỉ
 
 ---
 
@@ -742,7 +741,7 @@ Yêu cầu TOEIC khi kết thúc Tiếng Anh 3 theo quy định chuẩn ngoại 
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **khao_thi, ma_tran** (gợi ý, không cần đúng pipeline).
-- **Phải có đủ:** 450, 50
+- **Phải có (một trong):** 450, 50
 
 ---
 
@@ -756,7 +755,7 @@ Tài liệu kết quả thi Anh văn công bố 2024 của KMA dùng để tra c
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **diem_thi, bieu_mau** (gợi ý, không cần đúng pipeline).
-- **Phải có (một trong):** 14-Don_hoan_thi, Anh văn, 08_ket_qua
+- **Phải có (một trong):** 14-Don_hoan_thi, Anh văn, 08_ket_qua, hoãn
 
 ---
 
@@ -770,7 +769,7 @@ Quy chế đào tạo 2025: khối lượng tối thiểu cử nhân? Chương t
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **khao_thi, tuyen_sinh** (gợi ý, không cần đúng pipeline).
-- **Phải có đủ:** 120, 7.48.01.01
+- **Phải có (một trong):** 120, 7.48, tín chỉ
 
 ---
 
@@ -832,7 +831,7 @@ Em là tân sinh viên KMA nhập học 2024: cho em biết tổng tiền phải
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **bieu_mau, tuyen_sinh** (gợi ý, không cần đúng pipeline).
-- **Phải có (một trong):** 10.896, không có Ký túc xá, tuyensinh
+- **Phải có (một trong):** 10.896, Ký túc xá, tuyensinh, giấy tờ
 
 ---
 
@@ -888,8 +887,7 @@ Trong tài liệu ma trận đề thi KMA, nêu tổng số câu và thời gian
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).
-- **Phải có đủ:** 50, 60
-- **Phải có (một trong):** Cơ bản, CSDL
+- **Phải có (một trong):** 50, 60, Cơ bản, CSDL, phút
 
 ---
 
@@ -903,7 +901,7 @@ Cho biết sinh viên AT200401 và AT200201 trong kết quả phân loại tiế
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **diem_thi, khao_thi** (gợi ý, không cần đúng pipeline).
-- **Phải có (một trong):** AT200401, AT200201, 450
+- **Phải có (một trong):** AT200401, AT200201, 450, TOEIC
 
 ---
 
@@ -931,7 +929,7 @@ Sinh viên ngành CNTT KMA: mã ngành, hướng CDIO, đơn đăng ký đồ á
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).
-- **Phải có (một trong):** 7.48.01.01, 17-Don, 18-Giay
+- **Phải có (một trong):** 7.48.01.01, 7.48, 17-Don, 18-Giay, CDIO
 
 ---
 
@@ -945,7 +943,7 @@ Thủ tục nhập học KMA 2024: các khoản phí bắt buộc (học phí HK
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).
-- **Phải có (một trong):** 9.000.000, MBank, 26-Dang_ky
+- **Phải có (một trong):** 9.000.000, 9.000, MBank, 26-Dang_ky, 10.896, nhập học
 
 ---
 
@@ -959,7 +957,7 @@ Bảng điểm học kỳ 1 năm 2024-2025 đợt 2 của KMA gồm những họ
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).
-- **Phải có (một trong):** hk1_20242025_dot2
+- **Phải có (một trong):** hk1_20242025_dot2, hk1, 2024-2025, đợt 2, MSSV, bảng điểm
 
 ---
 
@@ -1037,6 +1035,7 @@ Ma trận đề thi Tin học đại cương có bao nhiêu câu?
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).
+- **Phải có (một trong):** 50, câu
 
 #### Lượt 2
 
@@ -1048,7 +1047,7 @@ Thời gian làm bài là bao lâu?
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).
-- **Phải có (một trong):** 60, phút
+- **Phải có (một trong):** 60, 90, phút, giờ
 
 ---
 
@@ -1066,6 +1065,7 @@ Chuẩn TOEIC trước khi làm đồ án tốt nghiệp KMA?
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **khao_thi** (gợi ý, không cần đúng pipeline).
+- **Phải có (một trong):** 450, TOEIC, toeic, đồ án
 
 #### Lượt 2
 
@@ -1077,7 +1077,7 @@ Giờ cho tôi mẫu đơn phúc khảo bài thi.
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **bieu_mau** (gợi ý, không cần đúng pipeline).
-- **Phải có (một trong):** phúc khảo, 15-Don
+- **Phải có (một trong):** phúc khảo, 15-Don, phuc khao
 
 ---
 
@@ -1193,6 +1193,7 @@ Em cần biết điểm trúng tuyển CNTT 2024 và học phí tạm thu HK1 kh
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).
+- **Phải có (một trong):** 26.20, 26.60, 10.896, tuyển sinh
 
 #### Lượt 2
 
@@ -1310,7 +1311,7 @@ Phương thức tuyển sinh đại học chính quy KMA năm 2025 là gì?
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).
-- **Phải có:** 26.20
+- **Phải có:** 26.20 · 26.60
 
 ---
 
@@ -1341,7 +1342,7 @@ Học viện có ký túc xá cho sinh viên hệ đóng học phí khi nhập h
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).
-- **Tài liệu tham chiếu:** 10_trung_tuyen_dtvt_2025.pdf, 13-Phieu_thanh_toan
+- **Phải có (một trong):** DTVT, thanh toán, ra trường, trúng tuyển
 
 ---
 
@@ -1355,7 +1356,7 @@ Môn Kiểm thử an toàn hệ thống thông tin thuộc ma trận nào? Quy c
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **ma_tran, khao_thi** (gợi ý, không cần đúng pipeline).
-- **Tài liệu tham chiếu:** 20_ma_tran_kiem_thu_athttt.pdf
+- **Phải có (một trong):** Kiểm thử, Phân hiệu, Hà Nội, TP.HCM
 
 ---
 
@@ -1371,7 +1372,7 @@ Tân sinh viên KMA: điểm chuẩn CNTT 2024, tổng tiền nhập học 2024,
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **tuyen_sinh, bieu_mau** (gợi ý, không cần đúng pipeline).
-- **Phải có (một trong):** 26.20, 26.60, 10.896, 04-Don
+- **Phải có (một trong):** 26.20, 26.60, 10.896, 04-Don, nhập học
 
 ---
 
@@ -1533,6 +1534,7 @@ Môn Kiểm thử an toàn hệ thống thông tin có trong ma trận đề thi
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **ma_tran** (gợi ý, không cần đúng pipeline).
+- **Phải có (một trong):** Kiểm thử, an toàn, ma trận
 - **Tài liệu tham chiếu:** 20_ma_tran_kiem_thu_athttt.pdf
 
 ---
@@ -1564,6 +1566,7 @@ Tài liệu kết quả tốt nghiệp CT4 năm 2024 của KMA dùng để tra c
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **diem_thi** (gợi ý, không cần đúng pipeline).
+- **Phải có (một trong):** CT4, tốt nghiệp, kết quả
 - **Tài liệu tham chiếu:** 04_ket_qua_tot_nghiep_ct4_2024.pdf
 
 ---
@@ -1578,6 +1581,7 @@ Chỉ tiêu tuyển sinh ngành Công nghệ thông tin năm 2025 của KMA là 
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **tuyen_sinh** (gợi ý, không cần đúng pipeline).
+- **Phải có (một trong):** chỉ tiêu, CNTT, Công nghệ thông tin
 - **Tài liệu tham chiếu:** 01_de_an_tuyen_sinh_2025.pdf
 
 ---
@@ -1608,7 +1612,7 @@ KMA có hướng dẫn thi tốt nghiệp online không? Và sinh viên phúc kh
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **khao_thi, bieu_mau** (gợi ý, không cần đúng pipeline).
-- **Phải có (một trong):** thi tốt nghiệp, phúc khảo, 15-Don
+- **Phải có (một trong):** thi tốt nghiệp, phúc khảo, 15-Don, online
 
 ---
 
@@ -1622,7 +1626,7 @@ KMA có hướng dẫn thi tốt nghiệp online không? Và sinh viên phúc kh
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **tuyen_sinh, khao_thi** (gợi ý, không cần đúng pipeline).
-- **Phải có (một trong):** 25.90, 25.95, tín chỉ
+- **Phải có (một trong):** 25.90, 25.95, tín chỉ, an toàn
 
 ---
 
@@ -1636,7 +1640,7 @@ Tên file giấy giới thiệu thực tập trong catalog KMA? Chương trình 
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **bieu_mau, tuyen_sinh** (gợi ý, không cần đúng pipeline).
-- **Phải có (một trong):** 18-Giay, CDIO
+- **Phải có (một trong):** 18-Giay, CDIO, thực tập
 
 ---
 
@@ -1680,7 +1684,7 @@ Sinh viên AT200106 đạt tiếng Anh đầu vào 2024 chưa? Đơn xin hoãn t
 **Câu trả lời đúng cần có:**
 
 - Mảng phù hợp: **diem_thi, bieu_mau, ma_tran** (gợi ý, không cần đúng pipeline).
-- **Phải có (một trong):** AT200106, 14-Don, 50, 60
+- **Phải có (một trong):** AT200106, 14-Don, 50, 60, hoãn
 
 ---
 

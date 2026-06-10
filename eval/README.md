@@ -5,7 +5,8 @@
 | File | Dùng để |
 |------|---------|
 | **`test_tay_100_cau.md`** | **Mở file này** — copy câu hỏi, so sánh câu trả lời đúng |
-| `benchmark.json` | Nguồn máy đọc (100 case) |
+| `benchmark.json` | Nguồn máy đọc (100 case, **v3.1** — rubric đã tinh chỉnh cho 4.3–4.4) |
+| `HUONG_DAN_4_3_4_4.md` | Cách viết mục 4.3–4.4 + bảng mẫu từ `run_*.json` |
 | `build_benchmark.py` | Sửa case → `python eval/build_benchmark.py` |
 | `run_benchmark.py` | Chấm tự động qua API (tùy chọn) |
 | `benchmark.md` | Chi tiết kỹ thuật routing (tham khảo) |

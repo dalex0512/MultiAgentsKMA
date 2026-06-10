@@ -17,6 +17,7 @@ from config import (
     GRADE_LOOKUP_MAX_TOKENS,
 )
 from pipelines.retrieval import (
+    _parse_diem_period_hints,
     QdrantRetriever,
     extract_mssv,
     extract_all_mssv,
@@ -306,6 +307,35 @@ def _build_merged_context(docs: list[dict], max_chars: int) -> str:
     return "\n\n".join(parts)
 
 
+def _period_scope_line(question: str, retrieval_query: str | None) -> str:
+    """Khi câu hỏi đã nêu HK/đợt/năm — báo LLM không hỏi lại học kỳ."""
+    hints = _parse_diem_period_hints(f"{question} {retrieval_query or ''}")
+    if not any(hints.values()):
+        return ""
+    parts: list[str] = []
+    if hints.get("hk") == "hk2":
+        parts.append("Học kỳ 2 (HK2)")
+    elif hints.get("hk") == "hk1":
+        parts.append("Học kỳ 1 (HK1)")
+    if hints.get("year_key"):
+        yk = hints["year_key"]
+        if len(yk) == 8 and yk.isdigit():
+            parts.append(f"Năm học {yk[:4]}-{yk[4:]}")
+        else:
+            parts.append(f"Năm học {yk}")
+    if hints.get("dot") == "dot1":
+        parts.append("Đợt 1")
+    elif hints.get("dot") == "dot2":
+        parts.append("Đợt 2")
+    if not parts:
+        return ""
+    return (
+        "- Phạm vi đã xác định từ câu hỏi: "
+        + " · ".join(parts)
+        + ". Chỉ dùng chunk/file khớp; không hỏi lại học kỳ/đợt.\n"
+    )
+
+
 class GradeLookupPipeline:
     def __init__(self):
         self.openai = OpenAI(api_key=OPENAI_API_KEY)
@@ -364,10 +394,11 @@ class GradeLookupPipeline:
         if prefix:
             context = prefix + "\n\n" + context
         name_line = f"- Họ tên (đối chiếu): {name}" if name else "- Họ tên: (không gửi — chỉ lọc theo MSSV)"
+        period_line = _period_scope_line(question, retrieval_query)
 
         prompt = GRADE_LOOKUP_PROMPT.format(
             mssv=mssv_display,
-            name_line=name_line,
+            name_line=name_line + period_line,
             question=question.strip(),
             context=context,
         )
@@ -435,9 +466,10 @@ class GradeLookupPipeline:
         if prefix:
             context = prefix + "\n\n" + context
         name_line = f"- Họ tên (đối chiếu): {name}" if name else "- Họ tên: (không gửi — chỉ lọc theo MSSV)"
+        period_line = _period_scope_line(question, retrieval_query)
         prompt = GRADE_LOOKUP_PROMPT.format(
             mssv=mssv_display,
-            name_line=name_line,
+            name_line=name_line + period_line,
             question=question.strip(),
             context=context,
         )

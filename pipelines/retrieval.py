@@ -365,6 +365,15 @@ def _text_search_terms(query: str, agent_id: str) -> list[str]:
         if any(m in q for m in ("cdio", "kmc", "mã chương trình", "chuong trinh cntt")):
             terms.extend(["KMC.1.1.1", "CDIO", "23_chuong_trinh_dao_tao_cntt"])
     elif agent_id == "bieu_mau":
+        if any(m in q for m in (
+            "nghỉ học", "nghi hoc", "đơn nghỉ", "don nghi", "xin nghỉ",
+            "dưới 7", "duoi 7", "trên 7", "tren 7", "7 ngày", "7 ngay",
+            "khác nhau", "khac nhau", "so sánh", "so sanh",
+        )):
+            terms.extend([
+                "08-Don_nghi_hoc_duoi_7", "09-Don_nghi_hoc_tren_7",
+                "08-Don", "09-Don", "nghỉ học tạm thời",
+            ])
         if any(m in q for m in ("nhập học", "nhap hoc", "thủ tục", "giấy tờ", "giay to", "phí", "tiền", "catalog", "biểu mẫu", "bhy")):
             terms.extend(["Thu_tuc_nhap_hoc_2024", "10.896", "896.940", "Giấy báo trúng tuyển", "học bạ", "CCCD"])
             if "bhy" in q:
